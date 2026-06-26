@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#FFF8F0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="敲瓜辨生熟">
+<meta name="apple-mobile-web-app-title" content="这瓜保熟吗">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>🍉 敲瓜辨生熟</title>
+<title>🍉 这瓜保熟吗</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
@@ -162,13 +162,19 @@
   }
   .meas-row.show{opacity:1;transform:translateX(0)}
   .meas-row.outlier{border-color:var(--gold);background:#FFF7EC}
-  .meas-left{display:flex;align-items:center;gap:10px}
+  .meas-left{display:flex;flex-direction:column;align-items:stretch;gap:6px;flex:1;min-width:0}
+  .meas-left-top{display:flex;align-items:center;gap:10px}
   .meas-idx{width:26px;height:26px;border-radius:50%;background:var(--green-light);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .meas-row.outlier .meas-idx{background:var(--gold)}
   .meas-hz{font-family:"JetBrains Mono",monospace;font-size:17px;font-weight:800;color:var(--ink)}
   .meas-hz small{font-size:11px;color:var(--muted);font-weight:500;margin-left:2px}
-  .meas-state{font-size:18px}
+  .meas-hz .ac-tag{font-size:10.5px;color:var(--muted);font-weight:500;margin-left:6px;font-family:inherit}
+  .meas-hz .ac-tag.bad{color:var(--red-deep)}
+  .meas-state{font-size:18px;align-self:flex-start;margin-top:2px}
   .meas-empty{color:var(--muted);font-size:13px;text-align:center;padding:14px}
+  .meas-spectrum-wrap{width:100%;margin-top:2px}
+  .meas-spectrum{width:100%;height:50px;display:block;border-radius:6px;background:#FAFAF6;border:1px solid var(--card-edge)}
+  .meas-spectrum-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:"JetBrains Mono",monospace;margin-top:3px;padding:0 2px}
 
   .summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
   .summary-cell{border-radius:15px;padding:16px;text-align:center;border:1.5px solid var(--card-edge)}
@@ -364,6 +370,19 @@
   .btn-upload{background:var(--green);color:#fff}
   .btn-upload:active,.btn-save:active,.btn-cancel:active{transform:scale(.97)}
 
+  /* 校验失败提示 */
+  .alert-reasons{list-style:none;padding:0;margin:8px 0 14px}
+  .alert-reasons li{
+    font-size:13px;color:var(--red-deep);line-height:1.7;padding:8px 12px;margin-bottom:7px;
+    background:#FFF0F0;border:1px solid #FFD0D6;border-radius:10px;border-left:3px solid var(--red);
+  }
+  .alert-reasons li b{color:var(--red-deep)}
+  .alert-tip-box{
+    font-size:12.5px;color:var(--ink-soft);line-height:1.75;
+    background:#F4FBF6;border-radius:10px;padding:11px 13px;border-left:3px solid var(--green-light);
+  }
+  .alert-tip-box b{color:var(--green-deep)}
+
   /* 小屏适配 */
   @media(max-width:420px){
     h1{font-size:30px}
@@ -379,7 +398,7 @@
 
   <header>
     <div class="melon-badge">🍉</div>
-    <h1>这瓜保熟吗？</h1>
+    <h1>这瓜保熟吗</h1>
     <div class="subtitle">声学频率分析 · <b>本地分析</b> · <b style="color:var(--red)">共创项目</b><span class="mic-badge" id="micBadge">🎧 耳机</span></div>
   </header>
 
@@ -448,6 +467,7 @@
     <div class="warn-tip" id="warnTip"><span>⚠️</span><span id="warnText">数据波动大，建议补测一次</span></div>
     <div class="threshold-note">
       <b>参考阈值（通用）：</b>主频率 &lt; 133Hz 可能过熟/空心 · 133–189Hz 熟瓜 · &gt; 189Hz 偏生瓜。<br>
+      <b>公共上传校验：</b>多次测量两两差值需 ≤ 10Hz，且每次频谱需符合西瓜敲击声学特征；<b>本地保存</b>不受此限制。<br>
       ⚠️ <b>本工具仅作辅助参考，不可作为生熟判定的最终依据。</b>不同品种、产地、个体存在差异，购买前仍需结合外表、拍打、经验等综合判断。
     </div>
   </section>
@@ -527,6 +547,21 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ===== 校验失败提示弹窗 ===== -->
+<div class="modal-overlay" id="alertOverlay" hidden>
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title" id="alertTitle">⚠️ 数据不达标</span>
+      <button class="modal-close" id="alertClose">✕</button>
+    </div>
+    <div class="modal-body" id="alertBody"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="alertCancel">仍要保存到本地</button>
+      <button class="btn-upload" id="alertOk">重新测量</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -632,6 +667,50 @@
     clearTimeout(toastTimer);
     toastTimer=setTimeout(function(){toastEl.className="toast"+(isErr?" err":"");},2200);
   }
+
+  // ===== 校验失败提示弹窗 =====
+  var alertOverlay=$("alertOverlay"),alertBody=$("alertBody"),alertTitle=$("alertTitle"),
+      alertClose=$("alertClose"),alertCancel=$("alertCancel"),alertOk=$("alertOk");
+
+  // 公共上传质量校验：返回 {ok, reasons[]}
+  // 规则：① 至少 3 次测量 ② 多次测量两两差值 ≤ 10Hz ③ 每次测量频谱符合西瓜敲击声学特征
+  function validateForUpload(){
+    var reasons=[];
+    if(state.measurements.length<3){
+      reasons.push("测量次数不足 3 次（当前 "+state.measurements.length+" 次），无法可靠判定");
+    }
+    if(state.measurements.length>=2 && !state.consistent){
+      reasons.push("多次测量两两差值超过 10Hz（最大差值 "+state.maxDiff+"Hz），数据一致性不达标");
+    }
+    var invalidAcoustic=[];
+    for(var i=0;i<state.measurements.length;i++){
+      if(state.measurements[i].acousticValid===false)invalidAcoustic.push(state.measurements[i].index);
+    }
+    if(invalidAcoustic.length>0){
+      reasons.push("第 "+invalidAcoustic.join("、")+" 次测量频谱不符合西瓜敲击声学特征（主峰不突出或频率异常）");
+    }
+    return {ok:reasons.length===0,reasons:reasons};
+  }
+
+  function showInvalidTip(reasons){
+    var html='<div style="font-size:13.5px;color:var(--ink-soft);line-height:1.7;margin-bottom:4px">本次测量数据不满足<b style="color:var(--red)">公共上传</b>的质量要求：</div>';
+    html+='<ul class="alert-reasons">';
+    for(var i=0;i<reasons.length;i++){
+      html+='<li>'+escapeHtml(reasons[i])+'</li>';
+    }
+    html+='</ul>';
+    html+='<div class="alert-tip-box">💡 <b>本地保存</b>不受此限制，可继续保存到本机；若希望上传至公共数据库，请点击「重新测量」按规范重新敲击西瓜腹部。</div>';
+    alertBody.innerHTML=html;
+    alertOverlay.hidden=false;
+  }
+  function closeAlert(){alertOverlay.hidden=true;}
+  alertClose.addEventListener("click",closeAlert);
+  alertOverlay.addEventListener("click",function(e){if(e.target===alertOverlay)closeAlert();});
+  alertCancel.addEventListener("click",function(){closeAlert();});
+  alertOk.addEventListener("click",function(){
+    closeAlert();
+    if(!state.isMeasuring)runMeasurement(false);
+  });
 
   // ===== 品种名称库 =====
   var VARIETY_SET=new Set([
@@ -838,7 +917,29 @@
         var denom=(prev-2*cur+next);
         var shift=denom!==0?0.5*(prev-next)/denom:0;
         if(!isFinite(shift)||Math.abs(shift)>1)shift=0;
-        resolve(Math.round((peakBin+shift)*binHz));
+        var peakFreq=Math.round((peakBin+shift)*binHz);
+
+        // 频谱切片（0 ~ FB_HIGH Hz），用于绘图
+        var specEndBin=Math.min(binCount-1,Math.ceil(FB_HIGH/binHz))+1;
+        var spectrum=new Uint8Array(specEndBin);
+        for(var s=0;s<specEndBin;s++){
+          spectrum[s]=Math.min(255,Math.round(accum[s]/Math.max(frames,1)));
+        }
+
+        // 西瓜敲击声学特征校验：
+        // 1) 主频率落在合理共振范围 60–400Hz
+        // 2) 主峰突出度 peakVal/avgEnergy >= 5（有明显共振峰，而非平坦噪声/摩擦声）
+        // 3) 主峰能量绝对值达标（已由 absThresh=frames*8 隐式校验）
+        var peakRatio=peakVal/Math.max(avgEnergy,1);
+        var acousticValid=(peakFreq>=60&&peakFreq<=400)&&(peakRatio>=5);
+
+        resolve({
+          frequency:peakFreq,
+          spectrum:spectrum,
+          acousticValid:acousticValid,
+          peakRatio:Math.round(peakRatio*10)/10,
+          binHz:binHz
+        });
       }
       requestAnimationFrame(tick);
     });
@@ -881,12 +982,23 @@
       startCountdown();
 
       try{
-        var freq=await recordAndAnalyze();
+        var result=await recordAndAnalyze();
+        var freq=result.frequency;
         stopCountdown();
-        state.measurements.push({index:idx,frequency:freq,isOutlier:false});
+        state.measurements.push({
+          index:idx,
+          frequency:freq,
+          isOutlier:false,
+          spectrum:result.spectrum,
+          acousticValid:result.acousticValid,
+          peakRatio:result.peakRatio,
+          binHz:result.binHz
+        });
         renderMeasurements();
         statusBox.className="status-box";
-        statusMain.innerHTML='第 '+idx+' 次完成 · <span style="color:var(--green)">'+freq+' Hz</span>';
+        var freqColor=result.acousticValid?'var(--green)':'var(--gold)';
+        statusMain.innerHTML='第 '+idx+' 次完成 · <span style="color:'+freqColor+'">'+freq+' Hz</span>'+
+          (result.acousticValid?'':' · <span style="color:var(--gold);font-size:13px">频谱异常</span>');
         statusSub.textContent=k<n-1?"稍候进行下一次…":"分析中…";
         await delay(450);
       }catch(err){
@@ -924,9 +1036,18 @@
     var avg=getAverage();
     statusBox.className="status-box";
     statusMain.innerHTML='✅ 共 '+state.measurements.length+' 次测量完成';
-    var tip=state.consistent
-     ?'一致性良好 · 平均 <b style="color:var(--green-deep)">'+avg+' Hz</b> · 结果已确定，可保存'
-      :'差异明显（最大差值 '+state.maxDiff+'Hz）· 平均 <b style="color:var(--gold)">'+avg+' Hz</b> · 建议重新测量';
+    var badAcoustic=0;
+    for(var ba=0;ba<state.measurements.length;ba++){if(state.measurements[ba].acousticValid===false)badAcoustic++;}
+    var tip;
+    if(state.consistent && badAcoustic===0){
+      tip='一致性与频谱均合格 · 平均 <b style="color:var(--green-deep)">'+avg+' Hz</b> · 可保存或上传共创';
+    }else if(!state.consistent && badAcoustic>0){
+      tip='差异明显（最大差值 '+state.maxDiff+'Hz）且 '+badAcoustic+' 次频谱异常 · 平均 <b style="color:var(--gold)">'+avg+' Hz</b> · 不可上传公共库，建议重新测量';
+    }else if(!state.consistent){
+      tip='差异明显（最大差值 '+state.maxDiff+'Hz）· 平均 <b style="color:var(--gold)">'+avg+' Hz</b> · 不可上传公共库，建议重新测量';
+    }else{
+      tip='有 '+badAcoustic+' 次频谱异常 · 平均 <b style="color:var(--gold)">'+avg+' Hz</b> · 不可上传公共库，建议重新测量';
+    }
     statusSub.innerHTML=tip;
   }
 
@@ -970,15 +1091,80 @@
       var m=state.measurements[i];
       var row=document.createElement("div");
       row.className="meas-row"+(m.isOutlier?" outlier":"");
+      var acTag=m.acousticValid===false?'<span class="ac-tag bad">· 频谱异常</span>':'';
       row.innerHTML=
         '<div class="meas-left">'+
-          '<span class="meas-idx">'+m.index+'</span>'+
-          '<span class="meas-hz">'+m.frequency+'<small>Hz</small></span>'+
+          '<div class="meas-left-top">'+
+            '<span class="meas-idx">'+m.index+'</span>'+
+            '<span class="meas-hz">'+m.frequency+'<small>Hz</small></span>'+acTag+
+          '</div>'+
+          '<div class="meas-spectrum-wrap">'+
+            '<canvas class="meas-spectrum"></canvas>'+
+            '<div class="meas-spectrum-label"><span>0Hz</span><span>'+FB_HIGH+'Hz</span></div>'+
+          '</div>'+
         '</div>'+
-        '<span class="meas-state">'+(m.isOutlier?'⚠️':'✅')+'</span>';
+        '<span class="meas-state">'+(m.acousticValid===false?'⚠️':(m.isOutlier?'⚠️':'✅'))+'</span>';
       measList.appendChild(row);
-      requestAnimationFrame(function(r){r.className+=" show";}.bind(null,row));
+      // 布局后再绘制频谱图，确保 canvas.clientWidth 准确
+      requestAnimationFrame(function(r,measurement){
+        r.className+=" show";
+        var cv=r.querySelector(".meas-spectrum");
+        if(cv)drawSpectrum(cv,measurement);
+      }.bind(null,row,m));
     }
+  }
+
+  // ===== 频谱图绘制（Canvas）=====
+  function drawSpectrum(canvas,m){
+    var dpr=window.devicePixelRatio||1;
+    var cssW=canvas.clientWidth||300;
+    var cssH=50;
+    canvas.width=Math.floor(cssW*dpr);
+    canvas.height=Math.floor(cssH*dpr);
+    var ctx=canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssW,cssH);
+
+    var spectrum=m.spectrum;
+    if(!spectrum||spectrum.length===0){
+      ctx.fillStyle="#6B7B6E";
+      ctx.font="11px sans-serif";
+      ctx.textAlign="center";
+      ctx.fillText("无频谱数据",cssW/2,cssH/2+4);
+      return;
+    }
+
+    var n=spectrum.length;
+    var binHz=m.binHz||10;
+    var peakIdx=0,peakVal=0;
+    for(var i=0;i<n;i++){if(spectrum[i]>peakVal){peakVal=spectrum[i];peakIdx=i;}}
+
+    var barW=cssW/n;
+    var maxVal=255;
+    for(var i=0;i<n;i++){
+      var v=spectrum[i]/maxVal;
+      var h=Math.max(1,v*cssH*0.90);
+      var x=i*barW;
+      var y=cssH-h;
+      // 主峰附近红色，其他按强度渐变绿色
+      if(Math.abs(i-peakIdx)<=1){
+        ctx.fillStyle="#E63946";
+      }else if(v>0.4){
+        ctx.fillStyle="#52B788";
+      }else{
+        ctx.fillStyle="#A8D5BA";
+      }
+      ctx.fillRect(x,y,Math.max(0.6,barW-0.3),h);
+    }
+
+    // 标注峰值频率
+    ctx.fillStyle="#1B4332";
+    ctx.font="600 10px 'JetBrains Mono',monospace";
+    ctx.textAlign="right";
+    ctx.fillText(m.frequency+"Hz",cssW-4,11);
+    ctx.textAlign="left";
+    ctx.fillStyle="#6B7B6E";
+    ctx.fillText("峰值比 "+m.peakRatio,4,11);
   }
 
   function renderSummary(){
@@ -988,15 +1174,21 @@
     verdictCell.className="summary-cell "+v.cls;
     verdictVal.textContent=v.text;
     var icon=warnTip.firstElementChild;
+    var badAcoustic=0;
+    for(var i=0;i<state.measurements.length;i++){if(state.measurements[i].acousticValid===false)badAcoustic++;}
     if(state.measurements.length>=2){
-      if(state.consistent){
-        warnTip.className="warn-tip ok show";
-        if(icon)icon.textContent="✅";
-        warnText.textContent="一致性良好（两两差值 ≤ "+CONSISTENCY_LIMIT+"Hz），测量结果已确定";
-      }else{
+      if(!state.consistent){
         warnTip.className="warn-tip show";
         if(icon)icon.textContent="⚠️";
-        warnText.textContent="数据差异明显（最大差值 "+state.maxDiff+"Hz > "+CONSISTENCY_LIMIT+"），建议点击「重新测量」重测";
+        warnText.textContent="数据差异明显（最大差值 "+state.maxDiff+"Hz > "+CONSISTENCY_LIMIT+"），不可上传公共库，建议重新测量";
+      }else if(badAcoustic>0){
+        warnTip.className="warn-tip show";
+        if(icon)icon.textContent="⚠️";
+        warnText.textContent="有 "+badAcoustic+" 次测量频谱不符合西瓜敲击特征，不可上传公共库，建议重新测量";
+      }else{
+        warnTip.className="warn-tip ok show";
+        if(icon)icon.textContent="✅";
+        warnText.textContent="一致性与频谱特征均合格，可保存或上传共创";
       }
     }else{
       warnTip.className="warn-tip";
@@ -1051,7 +1243,13 @@
           // 从保存弹窗点上传：额外检查必要条件
           if(!state.variety){toast("上传需要填写品种",true);return false;}
           if(wSaved===null){toast("上传需要填写重量",true);return false;}
-          if(state.measurements.length<3){toast("上传需要至少 3 次测量",true);return false;}
+          // 公共上传严格校验：一致性 + 频谱特征
+          var check=validateForUpload();
+          if(!check.ok){
+            closeModal();
+            showInvalidTip(check.reasons);
+            return false;
+          }
           doUpload(actualVerdict);
           return;
         }
@@ -1130,13 +1328,13 @@
       toast("请先填写西瓜重量（0–10 kg）",true);weightEl.focus();return;
     }
     state.weight=wRaw;
-    if(state.measurements.length<3){
-      toast("请至少完成 3 次测量再上传",true);return;
-    }
     var avg=getAverage();
     if(avg<30||avg>800){toast("频率超出可上传范围（30–800Hz）",true);return;}
-    if(!state.consistent){
-      if(!confirm("数据差异较大（最大差值 "+state.maxDiff+"Hz），仍要上传吗？")) return;
+    // 公共上传严格校验：测量次数 + 一致性（两两差值 ≤ 10Hz）+ 频谱声学特征
+    var check=validateForUpload();
+    if(!check.ok){
+      showInvalidTip(check.reasons);
+      return;
     }
     var v=getVerdict(avg);
     var freqs=state.measurements.map(function(m){return m.frequency;});
