@@ -33,7 +33,7 @@ export async function onRequestGet({ request, env }) {
         byVariety: [],
         byVerdict: { raw: 0, ripe: 0, over: 0 },
         freqHistogram: BINS.map((b) => ({ bin: b.label, count: 0 })),
-        overall: { avgFreq: 0, minFreq: 0, maxFreq: 0 },
+        overall: { avgFreq: 0, minFreq: 0, maxFreq: 0, withWeight: 0, avgWeight: 0, avgRipeness: 0 },
       });
     }
 
@@ -41,15 +41,19 @@ export async function onRequestGet({ request, env }) {
     const verdictCnt = { raw: 0, ripe: 0, over: 0 };
     const histCnt = BINS.map(() => 0);
     let sum = 0, mn = Infinity, mx = -Infinity;
+    let weightSum = 0, weightCount = 0, ripenessSum = 0, ripenessCount = 0;
 
     for (const r of records) {
       const v = String(r.variety || "未填写");
       const f = Number(r.frequency) || 0;
       const verd = r.verdict || "raw";
+      const w = (typeof r.weight === "number" && r.weight > 0) ? r.weight : null;
+      const ri = (typeof r.ripenessIndex === "number" && r.ripenessIndex > 0) ? r.ripenessIndex : null;
 
-      if (!varietyMap.has(v)) varietyMap.set(v, { variety: v, count: 0, sum: 0 });
+      if (!varietyMap.has(v)) varietyMap.set(v, { variety: v, count: 0, sum: 0, weightSum: 0, weightCount: 0 });
       const e = varietyMap.get(v);
       e.count++; e.sum += f;
+      if (w !== null) { e.weightSum += w; e.weightCount++; }
 
       if (verdictCnt[verd] !== undefined) verdictCnt[verd]++;
 
@@ -60,10 +64,18 @@ export async function onRequestGet({ request, env }) {
       sum += f;
       if (f < mn) mn = f;
       if (f > mx) mx = f;
+      if (w !== null) { weightSum += w; weightCount++; }
+      if (ri !== null) { ripenessSum += ri; ripenessCount++; }
     }
 
     const byVariety = Array.from(varietyMap.values())
-      .map((e) => ({ variety: e.variety, count: e.count, avgFreq: Math.round(e.sum / e.count) }))
+      .map((e) => ({
+        variety: e.variety,
+        count: e.count,
+        avgFreq: Math.round(e.sum / e.count),
+        avgWeight: e.weightCount > 0 ? Math.round(e.weightSum / e.weightCount * 10) / 10 : null,
+        withWeight: e.weightCount,
+      }))
       .sort((a, b) => b.count - a.count);
 
     const freqHistogram = BINS.map((b, i) => ({ bin: b.label, count: histCnt[i] }));
@@ -77,6 +89,9 @@ export async function onRequestGet({ request, env }) {
         avgFreq: Math.round(sum / records.length),
         minFreq: mn === Infinity ? 0 : mn,
         maxFreq: mx === -Infinity ? 0 : mx,
+        withWeight: weightCount,
+        avgWeight: weightCount > 0 ? Math.round(weightSum / weightCount * 10) / 10 : 0,
+        avgRipeness: ripenessCount > 0 ? Math.round(ripenessSum / ripenessCount) : 0,
       },
     });
   } catch (e) {

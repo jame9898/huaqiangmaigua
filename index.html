@@ -83,6 +83,8 @@
 
   /* 品种录入 */
   .field-label{font-size:13px;color:var(--ink-soft);font-weight:500;margin-bottom:8px;display:block}
+  .field-label-spaced{margin-top:18px}
+  .field-hint{color:var(--muted);font-weight:400;font-size:11.5px;margin-left:4px}
   #variety{
     width:100%;border:2px solid var(--card-edge);border-radius:14px;
     padding:13px 16px;font-size:16px;font-family:inherit;color:var(--ink);background:#FFFCF7;transition:.2s;outline:none;
@@ -96,6 +98,19 @@
   }
   .tag:active{transform:scale(.96)}
   .tag.active{background:var(--green);border-color:var(--green);color:#fff}
+
+  /* 重量录入 */
+  .weight-row{display:flex;align-items:center;gap:0;border:2px solid var(--card-edge);border-radius:14px;background:#FFFCF7;overflow:hidden;transition:.2s}
+  .weight-row:focus-within{border-color:var(--green-light);box-shadow:0 0 0 4px rgba(82,183,136,.16)}
+  #weight{
+    flex:1;border:none;outline:none;background:transparent;
+    padding:13px 16px;font-size:16px;font-family:inherit;color:var(--ink);min-width:0;
+  }
+  #weight::-webkit-outer-spin-button,#weight::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  #weight[type=number]{-moz-appearance:textfield}
+  .weight-unit{padding-right:16px;color:var(--muted);font-size:14px;font-weight:600}
+  .weight-tags .wtag{border-color:#F4A261;background:#FFF7EC;color:#9A5A12}
+  .weight-tags .wtag.active{background:var(--gold);border-color:var(--gold);color:#fff}
 
   /* 测量控制 */
   .count-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
@@ -204,6 +219,10 @@
   .card.community{border-color:#FFD0D6;background:linear-gradient(180deg,#FFFCFA,#FFF8F0)}
   .community-intro{font-size:12.5px;color:var(--ink-soft);background:#FFF6EC;border-left:3px solid var(--red);border-radius:10px;padding:10px 13px;line-height:1.75;margin-bottom:14px}
   .community-intro b{color:var(--red-deep)}
+  .community-rules{font-size:12px;color:var(--ink-soft);background:#F4FBF6;border-left:3px solid var(--green);border-radius:10px;padding:10px 13px;line-height:1.75;margin-bottom:14px}
+  .community-rules ol{padding-left:22px;margin-top:4px}
+  .community-rules li{margin-top:2px}
+  .community-rules b{color:var(--green-deep)}
 
   .comm-tabs{display:flex;align-items:center;gap:8px;margin-bottom:12px;border-bottom:1.5px solid var(--card-edge);padding-bottom:2px}
   .comm-tab{
@@ -238,6 +257,7 @@
   .feed-variety{font-weight:700;color:var(--ink);font-size:14.5px}
   .feed-hz{font-family:"JetBrains Mono",monospace;font-weight:800;color:var(--green-deep);font-size:13.5px}
   .feed-time{font-size:11px;color:var(--muted);margin-top:2px}
+  .feed-weight{color:#9A5A12;font-weight:700;font-family:"JetBrains Mono",monospace}
 
   .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
   .stat-cell{border:1.5px solid var(--card-edge);border-radius:12px;padding:11px 13px;background:#FFFCF7;text-align:center}
@@ -336,17 +356,34 @@
     <div class="env-warn-body" id="envWarnBody"></div>
   </div>
 
-  <!-- 品种录入 -->
+  <!-- 品种 & 重量录入 -->
   <section class="card">
-    <div class="card-title"><span class="dot"></span>品种录入</div>
-    <label class="field-label" for="variety">西瓜品种名称</label>
-    <input id="variety" type="text" placeholder="如：8424" autocomplete="off" maxlength="20" value="8424">
+    <div class="card-title"><span class="dot"></span>品种 &amp; 重量</div>
+
+    <label class="field-label" for="variety">西瓜品种名称 <span class="field-hint">（点快捷标签或自行输入）</span></label>
+    <input id="variety" type="text" placeholder="自定义品种，如：京欣 / 美都 / 早春红玉…" autocomplete="off" maxlength="20" value="8424">
     <div class="quick-tags">
       <button class="tag" data-v="8424">8424</button>
       <button class="tag" data-v="麒麟">麒麟</button>
       <button class="tag" data-v="甘美">甘美</button>
       <button class="tag" data-v="特小凤">特小凤</button>
       <button class="tag" data-v="黑美人">黑美人</button>
+      <button class="tag" data-v="京欣">京欣</button>
+      <button class="tag" data-v="美都">美都</button>
+    </div>
+
+    <label class="field-label field-label-spaced" for="weight">瓜重（kg） <span class="field-hint">（用于科学参考的 f²m^(2/3) 成熟度指数，建议如实填写；不知道可留空）</span></label>
+    <div class="weight-row">
+      <input id="weight" type="number" inputmode="decimal" min="0.3" max="20" step="0.1" placeholder="如：4.5" autocomplete="off">
+      <span class="weight-unit">kg</span>
+    </div>
+    <div class="quick-tags weight-tags">
+      <button class="tag wtag" data-w="2">2 kg</button>
+      <button class="tag wtag" data-w="3">3 kg</button>
+      <button class="tag wtag" data-w="4">4 kg</button>
+      <button class="tag wtag" data-w="5">5 kg</button>
+      <button class="tag wtag" data-w="6">6 kg</button>
+      <button class="tag wtag" data-w="8">8 kg</button>
     </div>
   </section>
 
@@ -424,6 +461,15 @@
       <b>该项目为共创项目</b>：西瓜个体存在品种差异，判定会有不同，欢迎上传真实数据共同完善。
     </div>
 
+    <div class="community-rules">
+      ⚠️ <b>上传请尽量严谨：</b>
+      <ol>
+        <li><b>瓜重（kg）</b>有科学依据（成熟度指数 f²m^(2/3) 与质量相关），建议如实填写；</li>
+        <li><b>品种</b>请填写准确名称，不确定可写"未知"，不要随意编造；</li>
+        <li><b>测量频率</b>建议同一西瓜敲 3 次以上、两两差值 ≤ 10Hz 再上传，否则数据不具参考价值。</li>
+      </ol>
+    </div>
+
     <div class="comm-tabs">
       <button class="comm-tab active" data-tab="feed">📜 上传记录</button>
       <button class="comm-tab" data-tab="stats">📊 数据分析</button>
@@ -447,6 +493,17 @@
         <div class="stat-cell">
           <div class="stat-label">📉 频率范围</div>
           <div class="stat-value" id="statRange">—</div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-cell">
+          <div class="stat-label">⚖️ 平均瓜重</div>
+          <div class="stat-value" id="statAvgWeight">—<small>kg</small></div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">🧪 成熟度指数 f²m^(2/3)</div>
+          <div class="stat-value" id="statRipeness">—</div>
         </div>
       </div>
 
@@ -483,6 +540,7 @@
   // ===== 状态 =====
   var state={
     variety:"8424",
+    weight:null,
     targetCount:3,
     measurements:[],
     isMeasuring:false,
@@ -508,7 +566,8 @@
 
   // ===== DOM =====
   var $=function(id){return document.getElementById(id);};
-  var varietyEl=$("variety"),startBtn=$("startBtn"),statusBox=$("statusBox"),
+  var varietyEl=$("variety"),weightEl=$("weight"),
+      startBtn=$("startBtn"),statusBox=$("statusBox"),
       statusMain=$("statusMain"),statusSub=$("statusSub"),pulse=$("pulse"),
       measList=$("measList"),avgVal=$("avgVal"),verdictCell=$("verdictCell"),
       verdictVal=$("verdictVal"),warnTip=$("warnTip"),warnText=$("warnText"),
@@ -522,6 +581,7 @@
       commFeed=$("commFeed"),commStats=$("commStats"),
       commFeedList=$("commFeedList"),commFeedEmpty=$("commFeedEmpty"),
       statAvg=$("statAvg"),statRange=$("statRange"),
+      statAvgWeight=$("statAvgWeight"),statRipeness=$("statRipeness"),
       statByVariety=$("statByVariety"),statByVerdict=$("statByVerdict"),statByFreq=$("statByFreq");
 
   // ===== Toast =====
@@ -549,6 +609,25 @@
     }
   }
   setActiveTag("8424");
+
+  // ===== 重量录入 =====
+  var wtags=document.querySelectorAll(".wtag");
+  for(var wi=0;wi<wtags.length;wi++){
+    wtags[wi].addEventListener("click",function(){
+      var w=this.getAttribute("data-w");
+      weightEl.value=w;
+      syncWeight();
+    });
+  }
+  weightEl.addEventListener("input",syncWeight);
+  function syncWeight(){
+    var raw=parseFloat(weightEl.value);
+    state.weight=(isFinite(raw)&&raw>0)?raw:null;
+    for(var i=0;i<wtags.length;i++){
+      var wv=parseFloat(wtags[i].getAttribute("data-w"));
+      wtags[i].className="tag wtag"+(state.weight!==null&&Math.abs(wv-state.weight)<1e-6?" active":"");
+    }
+  }
 
   // ===== 测量次数步进 =====
   function setCount(n){
@@ -915,16 +994,28 @@
     if(state.measurements.length>=2 && !state.consistent){
       if(!confirm("数据差异较大（最大差值 "+state.maxDiff+"Hz），仍要上传吗？")) return;
     }
+    // 严谨性提示：未填重量 / 测量次数过少
+    var wRaw=parseFloat(weightEl.value);
+    var wValid=(isFinite(wRaw)&&wRaw>=0.3&&wRaw<=20);
+    if(!wValid){
+      if(!confirm("尚未填写瓜重（kg），重量是科学参考依据之一。\n确定不填写直接上传吗？")) return;
+    }
+    if(state.measurements.length<3){
+      if(!confirm("建议至少完成 3 次测量再上传，当前仅 "+state.measurements.length+" 次。\n仍要上传吗？")) return;
+    }
+    state.weight=wValid?wRaw:null;
     var v=getVerdict(avg);
     uploadBtn.classList.add("loading");
     uploadBtn.disabled=true;
     var prev=uploadBtn.textContent;
     uploadBtn.textContent="☁️ 上传中…";
     try{
+      var payload={variety:state.variety,frequency:avg,verdict:v.badge};
+      if(state.weight!==null) payload.weight=state.weight;
       var r=await fetch(apiUrl("/api/upload"),{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({variety:state.variety,frequency:avg,verdict:v.badge})
+        body:JSON.stringify(payload)
       });
       var data=await r.json();
       if(!r.ok||!data.ok)throw new Error(data&&data.error?data.error:("HTTP "+r.status));
@@ -995,6 +1086,7 @@
       var num=(r.userLabel||"").replace(/号.*$/,"")||("00"+(r.userNumber||"?"));
       var bc=badgeFor(r.verdict);
       var vt=r.verdictText||verdictTextOf(r.verdict);
+      var wTxt=(typeof r.weight==="number"&&r.weight>0)?' · <span class="feed-weight">'+r.weight+' kg</span>':'';
       html+=
         '<div class="feed-item">'+
           '<div class="feed-num">'+escapeHtml(num)+'</div>'+
@@ -1004,7 +1096,7 @@
               '<span class="feed-hz">'+Math.round(r.frequency||0)+' Hz</span>'+
               '<span class="badge '+bc+'">'+escapeHtml(vt)+'</span>'+
             '</div>'+
-            '<div class="feed-time">'+escapeHtml(r.userLabel||"")+' · '+fmtTime(r.timestamp)+'</div>'+
+            '<div class="feed-time">'+escapeHtml(r.userLabel||"")+wTxt+' · '+fmtTime(r.timestamp)+'</div>'+
           '</div>'+
         '</div>';
     }
@@ -1015,6 +1107,8 @@
     var o=data.overall||{};
     statAvg.innerHTML=total?Math.round(o.avgFreq)+'<small>Hz</small>':'—<small>Hz</small>';
     statRange.innerHTML=total?(o.minFreq+'<small>–</small>'+o.maxFreq+'<small>Hz</small>'):'—';
+    statAvgWeight.innerHTML=o.avgWeight>0?(o.avgWeight+'<small>kg</small> <span style="font-size:11px;color:var(--muted)">('+o.withWeight+'条)</span>'):'—<small>kg</small>';
+    statRipeness.innerHTML=o.avgRipeness>0?formatNum(o.avgRipeness):'—';
 
     // 品种
     var bv=data.byVariety||[];
@@ -1025,7 +1119,7 @@
       for(var i=0;i<top.length;i++){
         html+='<div class="stat-list-row">'+
           '<span class="stat-list-name">🍉 '+escapeHtml(top[i].variety)+'</span>'+
-          '<span class="stat-list-meta">均 '+top[i].avgFreq+'Hz</span>'+
+          '<span class="stat-list-meta">均 '+top[i].avgFreq+'Hz'+(top[i].withWeight>0?' · 均 '+top[i].avgWeight+'kg':'')+'</span>'+
           '<span class="stat-list-count">'+top[i].count+'</span>'+
         '</div>';
       }
@@ -1118,6 +1212,7 @@
   }
 
   function pad(n){return n<10?"0"+n:""+n;}
+  function formatNum(n){if(n>=10000)return (n/10000).toFixed(1)+"万";if(n>=1000)return (n/1000).toFixed(1)+"k";return ""+Math.round(n);}
   function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 
   // ===== 清空 =====

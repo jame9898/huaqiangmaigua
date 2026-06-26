@@ -24,6 +24,16 @@ export async function onRequestPost({ request, env }) {
   const variety = sanitizeVariety(body.variety);
   const frequency = Math.round(Number(body.frequency));
   const verdict = String(body.verdict || "").toLowerCase();
+  // 重量为可选字段：未填或非法则为 null
+  let weight = null;
+  if (body.weight !== undefined && body.weight !== null && body.weight !== "") {
+    const w = Number(body.weight);
+    if (Number.isFinite(w) && w >= 0.3 && w <= 20) {
+      weight = Math.round(w * 10) / 10; // 保留 1 位小数
+    } else {
+      return jsonError(400, "瓜重超出可上传范围（0.3–20 kg）");
+    }
+  }
 
   if (!variety) return jsonError(400, "品种不能为空");
   if (!Number.isFinite(frequency) || frequency < 30 || frequency > 800) {
@@ -38,10 +48,16 @@ export async function onRequestPost({ request, env }) {
     const userLabel = pad3(userNumber) + "号西瓜研究员";
     const timestamp = Date.now();
 
+    // 成熟度指数 f²m^(2/3)，仅当 weight 有效时计算
+    const ripenessIndex = weight !== null
+      ? Math.round(frequency * frequency * Math.pow(weight, 2 / 3))
+      : null;
+
     const record = {
       id: "u_" + date + "_" + pad3(userNumber),
       userNumber, userLabel,
       variety, frequency,
+      weight, ripenessIndex,
       verdict, verdictText: VERDICT_TEXT[verdict],
       date, timestamp,
     };
