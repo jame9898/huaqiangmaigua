@@ -1,7 +1,7 @@
 // GET /api/debug
 // 诊断接口：返回 Cloudflare Pages Functions 运行时实际拿到的 env keys
 // 用来排查"KV 未绑定"问题
-import { preflight, jsonOk, jsonError } from "../_lib.js";
+import { preflight, jsonOk, jsonError, getKV } from "../_lib.js";
 
 export async function onRequestOptions() {
   return preflight();
@@ -9,13 +9,20 @@ export async function onRequestOptions() {
 
 export async function onRequestGet({ env }) {
   const keys = env ? Object.keys(env) : [];
-  const hasKV = !!(env && env.KV);
+  const hasKVDirect = !!(env && env.KV);
+  let resolvedKVKey = null;
+  let kv = null;
+  try {
+    kv = getKV(env);
+    for (const k of keys) {
+      if (env[k] === kv) { resolvedKVKey = k; break; }
+    }
+  } catch (_) {}
   let kvProbe = "skipped";
-  if (hasKV) {
+  if (kv) {
     try {
-      // 试着写一次又读一次，验证 KV 真的能用
-      await env.KV.put("debug:ping", String(Date.now()), { expirationTtl: 60 });
-      const v = await env.KV.get("debug:ping");
+      await kv.put("debug:ping", String(Date.now()), { expirationTtl: 60 });
+      const v = await kv.get("debug:ping");
       kvProbe = v ? ("ok: " + v) : "read-empty";
     } catch (e) {
       kvProbe = "error: " + (e && e.message ? e.message : String(e));
@@ -24,7 +31,8 @@ export async function onRequestGet({ env }) {
   return jsonOk({
     runtime: "cloudflare-pages-functions",
     envKeys: keys,
-    hasKV,
+    hasKVDirect,
+    resolvedKVKey,
     kvProbe,
     now: Date.now(),
   });

@@ -58,11 +58,21 @@ export const VALID_VERDICTS = ["raw", "ripe", "over"];
 export const VERDICT_TEXT = { raw: "生瓜", ripe: "熟瓜", over: "过熟" };
 
 // KV 句柄：env.KV
+// 兼容 Cloudflare 后台 UI bug：如果绑定变量名意外带了首尾空格（例如 "KV "），
+// 这里自动扫一遍 env，找任何 trim 后等于 "KV" 的键。
 export function getKV(env) {
-  if (!env || !env.KV) {
-    throw new Error("KV 未绑定：请在 Cloudflare Pages → Settings → Functions → KV namespace bindings 添加变量名 KV");
+  if (env && env.KV) return env.KV;
+  if (env) {
+    for (const k of Object.keys(env)) {
+      if (k && k.trim() === "KV") {
+        const v = env[k];
+        if (v && typeof v.get === "function" && typeof v.put === "function") {
+          return v;
+        }
+      }
+    }
   }
-  return env.KV;
+  throw new Error("KV 未绑定：请在 Cloudflare Pages → Settings → Bindings 添加变量名 KV（注意别带空格）");
 }
 
 // 注意：Cloudflare KV 没有原子 INCR / LPUSH，下面是“读—改—写”，小流量敲瓜场景足够
