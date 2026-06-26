@@ -422,7 +422,7 @@
         <button id="countPlus" aria-label="增加">+</button>
       </div>
     </div>
-    <button id="startBtn" class="start-btn">🎤 开始测量</button>
+    <button id="startBtn" class="start-btn">开始测量</button>
     <div class="status-box" id="statusBox">
       <div class="status-main" id="statusMain"></div>
       <div class="status-sub" id="statusSub">用指关节轻敲瓜身腹部，每次敲击后等待分析</div>
@@ -486,7 +486,6 @@
 
     <div class="comm-tabs">
       <button class="comm-tab active" data-tab="feed">📜 上传记录</button>
-      <button class="comm-tab" data-tab="stats">📊 数据分析</button>
       <button id="commRefresh" class="comm-refresh" title="刷新">↻</button>
     </div>
 
@@ -494,56 +493,6 @@
     <div id="commFeed" class="comm-panel">
       <div class="comm-feed" id="commFeedList">
         <div class="hist-empty" id="commFeedEmpty">点击右上角 ↻ 加载今日记录</div>
-      </div>
-    </div>
-
-    <!-- 分析面板 -->
-    <div id="commStats" class="comm-panel" hidden>
-      <div class="stat-row">
-        <div class="stat-cell">
-          <div class="stat-label">📈 平均频率</div>
-          <div class="stat-value" id="statAvg">—<small>Hz</small></div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-label">📉 频率范围</div>
-          <div class="stat-value" id="statRange">—</div>
-        </div>
-      </div>
-
-      <div class="stat-row">
-        <div class="stat-cell">
-          <div class="stat-label">⚖️ 平均瓜重</div>
-          <div class="stat-value" id="statAvgWeight">—<small>kg</small></div>
-        </div>
-        <div class="stat-cell">
-          <div class="stat-label">🧪 成熟度指数 f²m^(2/3)</div>
-          <div class="stat-value" id="statRipeness">—</div>
-        </div>
-      </div>
-
-      <div class="stat-block">
-        <div class="stat-block-title">🍉 按品种统计</div>
-        <div id="statByVariety" class="stat-list"></div>
-      </div>
-
-      <div class="stat-block">
-        <div class="stat-block-title">🎯 检测结果分布</div>
-        <div class="verdict-bars" id="statByVerdict"></div>
-      </div>
-
-      <div class="stat-block">
-        <div class="stat-block-title">🔪 实际结果分布（切开后）</div>
-        <div class="verdict-bars" id="statByActualVerdict"></div>
-      </div>
-
-      <div class="stat-block">
-        <div class="stat-block-title">✅ 检测 vs 实际一致性</div>
-        <div class="stat-value" id="statMatch" style="text-align:center;padding:8px 0">—</div>
-      </div>
-
-      <div class="stat-block">
-        <div class="stat-block-title">📐 频率分布</div>
-        <div class="freq-bars" id="statByFreq"></div>
       </div>
     </div>
   </section>
@@ -633,11 +582,8 @@
       micBadge=$("micBadge"),
       envWarn=$("envWarn"),envWarnBody=$("envWarnBody"),
       commTotal=$("commTotal"),commRefresh=$("commRefresh"),
-      commFeed=$("commFeed"),commStats=$("commStats"),
-      commFeedList=$("commFeedList"),commFeedEmpty=$("commFeedEmpty"),
-      statAvg=$("statAvg"),statRange=$("statRange"),
-      statAvgWeight=$("statAvgWeight"),statRipeness=$("statRipeness"),
-      statByVariety=$("statByVariety"),statByVerdict=$("statByVerdict"),statByActualVerdict=$("statByActualVerdict"),statByFreq=$("statByFreq"),statMatch=$("statMatch");
+      commFeed=$("commFeed"),
+      commFeedList=$("commFeedList"),commFeedEmpty=$("commFeedEmpty");
 
   // ===== 弹窗 =====
   var modalOverlay=$("modalOverlay"),mVariety=$("mVariety"),mWeight=$("mWeight"),mFreqs=$("mFreqs"),
@@ -1182,7 +1128,6 @@
   }
 
   // ===== 共创数据：拉取 + 渲染 =====
-  var commTab="feed";
   function fmtBjTime(ts){
     var shifted=new Date((ts||0)+8*3600*1000);
     return pad(shifted.getUTCHours())+":"+pad(shifted.getUTCMinutes());
@@ -1216,12 +1161,9 @@
     }
     commRefresh.classList.add("loading");
     try{
-      var feedP=fetchJson("/api/records?limit=80");
-      var statP=fetchJson("/api/analysis");
-      var feed=await feedP, stat=await statP;
+      var feed=await fetchJson("/api/records?limit=80");
       commTotal.textContent=(feed.total||0)+" 条";
       renderFeed(feed.records||[]);
-      renderStats(stat);
     }catch(e){
       commFeedList.innerHTML='<div class="hist-empty">加载失败：'+escapeHtml(e.message||"未知错误")+'</div>';
       commTotal.textContent="— 条";
@@ -1234,9 +1176,11 @@
       commFeedList.innerHTML='<div class="hist-empty">今天还没有人上传过，做第 001 号研究员吧！</div>';
       return;
     }
+    var maxShow=5;
+    var shown=records.length>maxShow?records.slice(0,maxShow):records;
     var html="";
-    for(var i=0;i<records.length;i++){
-      var r=records[i];
+    for(var i=0;i<shown.length;i++){
+      var r=shown[i];
       var num=(r.userLabel||"").replace(/号.*$/,"")||("00"+(r.userNumber||"?"));
       var bc=badgeFor(r.verdict);
       var vt=r.verdictText||verdictTextOf(r.verdict);
@@ -1262,108 +1206,10 @@
           '</div>'+
         '</div>';
     }
+    if(records.length>maxShow){
+      html+='<div class="hist-empty" style="font-size:11px;margin-top:4px">仅显示最新 '+maxShow+' 条，共 '+records.length+' 条 · 点 ↻ 刷新</div>';
+    }
     commFeedList.innerHTML=html;
-  }
-  function renderStats(data){
-    var total=data.total||0;
-    var o=data.overall||{};
-    statAvg.innerHTML=total?Math.round(o.avgFreq)+'<small>Hz</small>':'—<small>Hz</small>';
-    statRange.innerHTML=total?(o.minFreq+'<small>–</small>'+o.maxFreq+'<small>Hz</small>'):'—';
-    statAvgWeight.innerHTML=o.avgWeight>0?(o.avgWeight+'<small>kg</small> <span style="font-size:11px;color:var(--muted)">('+o.withWeight+'条)</span>'):'—<small>kg</small>';
-    statRipeness.innerHTML=o.avgRipeness>0?formatNum(o.avgRipeness):'—';
-
-    // 品种
-    var bv=data.byVariety||[];
-    if(bv.length===0){
-      statByVariety.innerHTML='<div class="hist-empty" style="padding:10px">暂无数据</div>';
-    }else{
-      var top=bv.slice(0,8),html="";
-      for(var i=0;i<top.length;i++){
-        html+='<div class="stat-list-row">'+
-          '<span class="stat-list-name">🍉 '+escapeHtml(top[i].variety)+'</span>'+
-          '<span class="stat-list-meta">均 '+top[i].avgFreq+'Hz'+(top[i].withWeight>0?' · 均 '+top[i].avgWeight+'kg':'')+'</span>'+
-          '<span class="stat-list-count">'+top[i].count+'</span>'+
-        '</div>';
-      }
-      statByVariety.innerHTML=html;
-    }
-
-    // 判定
-    var verd=data.byVerdict||{raw:0,ripe:0,over:0};
-    var sum=Math.max(1,(verd.raw||0)+(verd.ripe||0)+(verd.over||0));
-    var rows=[
-      {k:"raw",label:"生瓜",n:verd.raw||0},
-      {k:"ripe",label:"熟瓜",n:verd.ripe||0},
-      {k:"over",label:"过熟",n:verd.over||0}
-    ];
-    var vhtml="";
-    for(var j=0;j<rows.length;j++){
-      var pct=Math.round(rows[j].n*100/sum);
-      vhtml+='<div class="vbar">'+
-        '<span class="vbar-label '+rows[j].k+'">'+rows[j].label+'</span>'+
-        '<div class="vbar-track"><div class="vbar-fill '+rows[j].k+'" style="width:'+pct+'%"></div></div>'+
-        '<span class="vbar-num">'+rows[j].n+'</span>'+
-      '</div>';
-    }
-    statByVerdict.innerHTML=vhtml;
-
-    // 实际结果分布
-    var averd=data.byActualVerdict||{raw:0,ripe:0,over:0,pending:0};
-    var asum=Math.max(1,(averd.raw||0)+(averd.ripe||0)+(averd.over||0)+(averd.pending||0));
-    var arows=[
-      {k:"raw",label:"生瓜",n:averd.raw||0},
-      {k:"ripe",label:"熟瓜",n:averd.ripe||0},
-      {k:"over",label:"过熟",n:averd.over||0},
-      {k:"",label:"待切开",n:averd.pending||0}
-    ];
-    var avhtml="";
-    for(var aj=0;aj<arows.length;aj++){
-      var apct=Math.round(arows[aj].n*100/asum);
-      var ak=arows[aj].k||"raw";
-      avhtml+='<div class="vbar">'+
-        '<span class="vbar-label '+ak+'">'+arows[aj].label+'</span>'+
-        '<div class="vbar-track"><div class="vbar-fill '+ak+'" style="width:'+apct+'%"></div></div>'+
-        '<span class="vbar-num">'+arows[aj].n+'</span>'+
-      '</div>';
-    }
-    statByActualVerdict.innerHTML=avhtml;
-
-    // 检测 vs 实际一致性
-    var mc=data.overall.matchCount||0, mt=data.overall.matchTotal||0;
-    if(mt>0){
-      var pctMatch=Math.round(mc*100/mt);
-      statMatch.innerHTML='<b style="color:'+(pctMatch>=70?'var(--green)':'var(--gold)')+'">'+pctMatch+'%</b> 一致 （'+mc+'/'+mt+' 条有实际结果）';
-    }else{
-      statMatch.innerHTML='暂无实际结果（所有记录均标记为"待切开"）';
-    }
-
-    // 频率分布
-    var hist=data.freqHistogram||[];
-    var maxC=1;for(var m=0;m<hist.length;m++){if(hist[m].count>maxC)maxC=hist[m].count;}
-    var fhtml="";
-    for(var n2=0;n2<hist.length;n2++){
-      var w=Math.round(hist[n2].count*100/maxC);
-      fhtml+='<div class="fbar">'+
-        '<span class="fbar-label">'+escapeHtml(hist[n2].bin)+'</span>'+
-        '<div class="fbar-track"><div class="fbar-fill" style="width:'+w+'%"></div></div>'+
-        '<span class="fbar-num">'+hist[n2].count+'</span>'+
-      '</div>';
-    }
-    statByFreq.innerHTML=fhtml;
-  }
-
-  // Tab 切换
-  var commTabs=document.querySelectorAll(".comm-tab");
-  for(var ct=0;ct<commTabs.length;ct++){
-    commTabs[ct].addEventListener("click",function(){
-      var t=this.getAttribute("data-tab");
-      for(var i=0;i<commTabs.length;i++){
-        commTabs[i].className="comm-tab"+(commTabs[i]===this?" active":"");
-      }
-      commFeed.hidden=(t!=="feed");
-      commStats.hidden=(t!=="stats");
-      commTab=t;
-    });
   }
   commRefresh.addEventListener("click",loadCommunity);
 
