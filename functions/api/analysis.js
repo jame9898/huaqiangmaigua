@@ -32,21 +32,25 @@ export async function onRequestGet({ request, env }) {
         date, total: 0,
         byVariety: [],
         byVerdict: { raw: 0, ripe: 0, over: 0 },
+        byActualVerdict: { raw: 0, ripe: 0, over: 0, pending: 0 },
         freqHistogram: BINS.map((b) => ({ bin: b.label, count: 0 })),
-        overall: { avgFreq: 0, minFreq: 0, maxFreq: 0, withWeight: 0, avgWeight: 0, avgRipeness: 0 },
+        overall: { avgFreq: 0, minFreq: 0, maxFreq: 0, withWeight: 0, avgWeight: 0, avgRipeness: 0, matchCount: 0, matchTotal: 0 },
       });
     }
 
     const varietyMap = new Map();
     const verdictCnt = { raw: 0, ripe: 0, over: 0 };
+    const actualCnt = { raw: 0, ripe: 0, over: 0, pending: 0 };
     const histCnt = BINS.map(() => 0);
     let sum = 0, mn = Infinity, mx = -Infinity;
     let weightSum = 0, weightCount = 0, ripenessSum = 0, ripenessCount = 0;
+    let matchCount = 0, matchTotal = 0;
 
     for (const r of records) {
       const v = String(r.variety || "未填写");
       const f = Number(r.frequency) || 0;
       const verd = r.verdict || "raw";
+      const av = r.actualVerdict || "pending";
       const w = (typeof r.weight === "number" && r.weight > 0) ? r.weight : null;
       const ri = (typeof r.ripenessIndex === "number" && r.ripenessIndex > 0) ? r.ripenessIndex : null;
 
@@ -56,6 +60,7 @@ export async function onRequestGet({ request, env }) {
       if (w !== null) { e.weightSum += w; e.weightCount++; }
 
       if (verdictCnt[verd] !== undefined) verdictCnt[verd]++;
+      if (actualCnt[av] !== undefined) actualCnt[av]++;
 
       for (let i = 0; i < BINS.length; i++) {
         if (f >= BINS[i].lo && f < BINS[i].hi) { histCnt[i]++; break; }
@@ -66,6 +71,12 @@ export async function onRequestGet({ request, env }) {
       if (f > mx) mx = f;
       if (w !== null) { weightSum += w; weightCount++; }
       if (ri !== null) { ripenessSum += ri; ripenessCount++; }
+
+      // 检测 vs 实际一致性：仅 actualVerdict 不为 pending 时对比
+      if (av !== "pending") {
+        matchTotal++;
+        if (av === verd) matchCount++;
+      }
     }
 
     const byVariety = Array.from(varietyMap.values())
@@ -84,6 +95,7 @@ export async function onRequestGet({ request, env }) {
       date, total: records.length,
       byVariety,
       byVerdict: verdictCnt,
+      byActualVerdict: actualCnt,
       freqHistogram,
       overall: {
         avgFreq: Math.round(sum / records.length),
@@ -92,6 +104,7 @@ export async function onRequestGet({ request, env }) {
         withWeight: weightCount,
         avgWeight: weightCount > 0 ? Math.round(weightSum / weightCount * 10) / 10 : 0,
         avgRipeness: ripenessCount > 0 ? Math.round(ripenessSum / ripenessCount) : 0,
+        matchCount, matchTotal,
       },
     });
   } catch (e) {

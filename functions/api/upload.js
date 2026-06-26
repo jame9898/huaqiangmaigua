@@ -1,12 +1,15 @@
 // POST /api/upload
-// 入参 body: { variety:String, frequency:Number, verdict:"raw"|"ripe"|"over" }
-// 出参 : { ok:true, record:{ userNumber, userLabel, variety, frequency, verdict, verdictText, date, timestamp } }
+// 入参 body: { variety:String, weight:Number, frequency:Number, verdict:"raw"|"ripe"|"over", actualVerdict:"raw"|"ripe"|"over"|"pending" }
+// 出参 : { ok:true, record:{ userNumber, userLabel, variety, weight, frequency, verdict, verdictText, actualVerdict, actualVerdictText, date, timestamp, ripenessIndex } }
 import {
   preflight, jsonOk, jsonError,
   getKV, todayKey, pad3, sanitizeVariety,
   nextUserNumber, appendRecord,
   VALID_VERDICTS, VERDICT_TEXT,
 } from "../_lib.js";
+
+const VALID_ACTUAL_VERDICTS = ["raw", "ripe", "over", "pending"];
+const ACTUAL_VERDICT_TEXT = { raw: "生瓜", ripe: "熟瓜", over: "过熟", pending: "待切开" };
 
 export async function onRequestOptions() {
   return preflight();
@@ -24,22 +27,21 @@ export async function onRequestPost({ request, env }) {
   const variety = sanitizeVariety(body.variety);
   const frequency = Math.round(Number(body.frequency));
   const verdict = String(body.verdict || "").toLowerCase();
-  // 重量为可选字段：未填或非法则为 null
-  let weight = null;
-  if (body.weight !== undefined && body.weight !== null && body.weight !== "") {
-    const w = Number(body.weight);
-    if (Number.isFinite(w) && w >= 0.3 && w <= 20) {
-      weight = Math.round(w * 10) / 10; // 保留 1 位小数
-    } else {
-      return jsonError(400, "瓜重超出可上传范围（0.3–20 kg）");
-    }
+  const actualVerdict = String(body.actualVerdict || "").toLowerCase();
+
+  // 重量必填
+  const w = Number(body.weight);
+  if (!Number.isFinite(w) || w < 0.3 || w > 20) {
+    return jsonError(400, "西瓜重量不能为空且需在 0.3–20 kg 范围内");
   }
+  const weight = Math.round(w * 10) / 10;
 
   if (!variety) return jsonError(400, "品种不能为空");
   if (!Number.isFinite(frequency) || frequency < 30 || frequency > 800) {
     return jsonError(400, "频率超出可上传范围（30–800Hz）");
   }
-  if (VALID_VERDICTS.indexOf(verdict) < 0) return jsonError(400, "判定结果不合法");
+  if (VALID_VERDICTS.indexOf(verdict) < 0) return jsonError(400, "检测结果不合法");
+  if (VALID_ACTUAL_VERDICTS.indexOf(actualVerdict) < 0) return jsonError(400, "实际结果不合法");
 
   try {
     const kv = getKV(env);
@@ -48,10 +50,7 @@ export async function onRequestPost({ request, env }) {
     const userLabel = pad3(userNumber) + "号西瓜研究员";
     const timestamp = Date.now();
 
-    // 成熟度指数 f²m^(2/3)，仅当 weight 有效时计算
-    const ripenessIndex = weight !== null
-      ? Math.round(frequency * frequency * Math.pow(weight, 2 / 3))
-      : null;
+    const ripenessIndex = Math.round(frequency * frequency * Math.pow(weight, 2 / 3));
 
     const record = {
       id: "u_" + date + "_" + pad3(userNumber),
@@ -59,6 +58,7 @@ export async function onRequestPost({ request, env }) {
       variety, frequency,
       weight, ripenessIndex,
       verdict, verdictText: VERDICT_TEXT[verdict],
+      actualVerdict, actualVerdictText: ACTUAL_VERDICT_TEXT[actualVerdict],
       date, timestamp,
     };
 
