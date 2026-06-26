@@ -901,6 +901,7 @@
         // 敲击瞬态检测：纯相对判据，设备/音量无关
         // 环境基线 = 排序后最低 30% 帧的平均（排除敲击帧后的真实底噪）
         // 纯环境底噪：峰值≈基线，比值≈1；真实敲击：峰值远超基线，比值≥2.5
+        // 注意：必须有真实的相对比值，禁止用绝对阈值后门放行（否则环境底噪会误通过）
         var maxFrameE=0;
         for(var i=0;i<frameEnergies.length;i++){
           if(frameEnergies[i]>maxFrameE){maxFrameE=frameEnergies[i];}
@@ -910,10 +911,11 @@
         var baselineSum=0;
         for(var k=0;k<baselineN;k++){baselineSum+=sortedE[k];}
         var baselineE=baselineSum/baselineN;
-        // 有瞬态 = 峰值/基线 ≥ 2.5；基线极小时只要峰值≥20（防数值噪声误判）
+        // 强制相对比值判据：峰值必须显著高于环境基线（≥2.5 倍）
+        // 基线为 0 时（极安静），要求峰值至少 200（真实敲击声能量量级）
         var hasTransient = baselineE>0
           ? (maxFrameE/baselineE >= 2.5)
-          : (maxFrameE >= 20);
+          : (maxFrameE >= 200);
         if(!hasTransient){
           reject(new Error("未检测到敲击声（环境噪声为主），请在安静环境靠近西瓜用力轻敲"));
           return;
@@ -948,16 +950,22 @@
         }
 
         // 西瓜敲击声学特征校验（第二道防线）：
-        // 主频在 60–400Hz 共振范围 且 主峰突出度 peakRatio ≥ 4.0
-        // （敲木头实测约 2.8–3.7，西瓜中空共振主峰更尖锐，暂定 ≥4.0，后续按实测调整）
+        // 1) 主频在 60–400Hz 共振范围
+        // 2) 主峰突出度 peakRatio ≥ 4.0（敲木头实测 2.8–3.7，西瓜中空共振主峰更尖锐）
+        // 3) 主峰能量必须显著高于环境基线（防止环境底噪共振骗过瞬态检测后直接输出）
+        //    环境底噪共振：主峰累积值/帧数 ≈ baselineE；真实敲击：主峰远超基线
         var peakRatio=peakVal/Math.max(avgEnergy,1);
         var freqInRange=(peakFreq>=60&&peakFreq<=400);
         var peakSharp=(peakRatio>=4.0);
-        var acousticValid=freqInRange && peakSharp;
+        var peakAboveBaseline = baselineE>0
+          ? ((peakVal/Math.max(frames,1))/baselineE >= 2.0)
+          : true; // baselineE 为 0 时不拦，交给前面瞬态检测
+        var acousticValid=freqInRange && peakSharp && peakAboveBaseline;
         if(!acousticValid){
           var reason="";
           if(!freqInRange)reason="主频"+peakFreq+"Hz超出西瓜共振范围(60–400Hz)";
-          else reason="主峰突出度仅"+(Math.round(peakRatio*10)/10)+"（需≥4.0），频谱不够尖锐";
+          else if(!peakSharp)reason="主峰突出度仅"+(Math.round(peakRatio*10)/10)+"（需≥4.0），频谱不够尖锐";
+          else reason="主峰能量未显著高于环境基线，疑似环境底噪共振";
           reject(new Error("频谱不符合西瓜敲击特征（"+reason+"），请对准西瓜腹部用指关节轻敲"));
           return;
         }
