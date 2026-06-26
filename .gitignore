@@ -3,3 +3,10 @@ key.pem
 serve_https.py
 .trae/
 __pycache__/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
