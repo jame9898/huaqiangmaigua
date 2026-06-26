@@ -502,8 +502,8 @@
   var CONSISTENCY_LIMIT=10;
 
   // ===== 后端 API 地址 =====
-  // 部署到 Vercel 后把下面的占位换成你的 Vercel 域名，如 "https://huaqiangmaigua.vercel.app"
-  // 在 Vercel 域名上跑时也可以留空字符串走同源 /api/*
+  // 前后端都部署在 Cloudflare Pages 同一项目，留空 = 同源调用 /api/*
+  // 如果前端独立部署在别处（如 GitHub Pages），把这里填成 "https://huaqiangmaigua.pages.dev"
   var API_BASE="";
 
   // ===== DOM =====
@@ -898,11 +898,18 @@
     if(base && base.charAt(base.length-1)==="/") base=base.slice(0,-1);
     return base+path;
   }
+  // 同域部署（Cloudflare Pages）时 API_BASE 留空，使用相对路径 /api/*；
+  // 跨域部署（前端在 GitHub Pages）时需要填写完整域名才能调用
+  function apiEnabled(){
+    if(API_BASE) return true;
+    // 同域时只要不是 file:// 就允许
+    return location.protocol!=="file:";
+  }
   async function uploadCurrent(){
     if(state.measurements.length===0){toast("没有可上传的测量数据",true);return;}
     state.variety=varietyEl.value.trim();
     if(!state.variety){toast("请先填写品种",true);return;}
-    if(!API_BASE){toast("尚未配置后端地址，请联系作者部署 Vercel",true);return;}
+    if(!apiEnabled()){toast("当前环境无法调用后端 API",true);return;}
     var avg=getAverage();
     if(avg<30||avg>800){toast("频率超出可上传范围（30–800Hz）",true);return;}
     if(state.measurements.length>=2 && !state.consistent){
@@ -950,15 +957,15 @@
     return "生瓜";
   }
   async function fetchJson(path){
-    if(!API_BASE){throw new Error("尚未配置后端地址");}
+    if(!apiEnabled()){throw new Error("当前环境无法调用后端 API");}
     var r=await fetch(apiUrl(path));
     var data=await r.json();
     if(!r.ok||!data.ok)throw new Error(data&&data.error?data.error:("HTTP "+r.status));
     return data;
   }
   async function loadCommunity(){
-    if(!API_BASE){
-      commFeedList.innerHTML='<div class="hist-empty">尚未配置后端 API，部署 Vercel 后即可看到共创数据</div>';
+    if(!apiEnabled()){
+      commFeedList.innerHTML='<div class="hist-empty">本地 file:// 环境无法访问后端 API，请部署后访问</div>';
       commTotal.textContent="— 条";
       return;
     }

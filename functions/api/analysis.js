@@ -1,17 +1,9 @@
 // GET /api/analysis?date=YYYY-MM-DD
 // 默认 date=今天。聚合维度：品种、判定、频率分布
-// 返回:
-// {
-//   ok, date, total,
-//   byVariety: [{ variety, count, avgFreq }, ...],
-//   byVerdict: { raw, ripe, over },
-//   freqHistogram: [{ bin:"<100", count }, { bin:"100-130", ... }, ...],
-//   overall: { avgFreq, minFreq, maxFreq }
-// }
-const {
-  preflight, jsonError, jsonOk,
-  redis, todayKey, validateDate,
-} = require("./_lib.js");
+import {
+  preflight, jsonOk, jsonError,
+  getKV, todayKey, validateDate, readRecords,
+} from "../_lib.js";
 
 const BINS = [
   { label: "<100", lo: 0, hi: 100 },
@@ -22,28 +14,28 @@ const BINS = [
   { label: "≥230", lo: 230, hi: Infinity },
 ];
 
-module.exports = async (req, res) => {
-  if (preflight(req, res)) return;
-  if (req.method !== "GET") return jsonError(res, 405, "Method Not Allowed");
+export async function onRequestOptions() {
+  return preflight();
+}
 
-  const qDate = req.query && req.query.date;
+export async function onRequestGet({ request, env }) {
+  const url = new URL(request.url);
+  const qDate = url.searchParams.get("date");
   const date = validateDate(qDate) ? qDate : todayKey();
-  const listKey = "uploads:" + date;
 
   try {
-    const total = Number(await redis(["LLEN", listKey])) || 0;
-    if (total === 0) {
-      return jsonOk(res, {
+    const kv = getKV(env);
+    const records = await readRecords(kv, date, 0);
+
+    if (records.length === 0) {
+      return jsonOk({
         date, total: 0,
-        byVariety: [], byVerdict: { raw: 0, ripe: 0, over: 0 },
+        byVariety: [],
+        byVerdict: { raw: 0, ripe: 0, over: 0 },
         freqHistogram: BINS.map((b) => ({ bin: b.label, count: 0 })),
         overall: { avgFreq: 0, minFreq: 0, maxFreq: 0 },
       });
     }
-    const raw = await redis(["LRANGE", listKey, 0, total - 1]);
-    const records = (raw || []).map((s) => {
-      try { return JSON.parse(s); } catch (e) { return null; }
-    }).filter(Boolean);
 
     const varietyMap = new Map();
     const verdictCnt = { raw: 0, ripe: 0, over: 0 };
@@ -65,7 +57,9 @@ module.exports = async (req, res) => {
         if (f >= BINS[i].lo && f < BINS[i].hi) { histCnt[i]++; break; }
       }
 
-      sum += f; if (f < mn) mn = f; if (f > mx) mx = f;
+      sum += f;
+      if (f < mn) mn = f;
+      if (f > mx) mx = f;
     }
 
     const byVariety = Array.from(varietyMap.values())
@@ -74,8 +68,8 @@ module.exports = async (req, res) => {
 
     const freqHistogram = BINS.map((b, i) => ({ bin: b.label, count: histCnt[i] }));
 
-    return jsonOk(res, {
-      date, total,
+    return jsonOk({
+      date, total: records.length,
       byVariety,
       byVerdict: verdictCnt,
       freqHistogram,
@@ -86,6 +80,10 @@ module.exports = async (req, res) => {
       },
     });
   } catch (e) {
-    return jsonError(res, 500, e.message || "分析失败");
+    return jsonError(500, e.message || "分析失败");
   }
-};
+}
+
+export async function onRequest() {
+  return jsonError(405, "Method Not Allowed");
+}
