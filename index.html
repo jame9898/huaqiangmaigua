@@ -328,9 +328,6 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .toast.err{background:var(--red)}
 
-  footer{text-align:center;color:var(--muted);font-size:11px;margin-top:20px;line-height:1.8}
-  footer b{color:var(--green-deep)}
-
   /* modal 弹窗 */
   .modal-overlay{
     position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;
@@ -382,7 +379,7 @@
 
   <header>
     <div class="melon-badge">🍉</div>
-    <h1>敲瓜辨生熟</h1>
+    <h1>这瓜保熟吗？</h1>
     <div class="subtitle">声学频率分析 · <b>本地分析</b> · <b style="color:var(--red)">共创项目</b><span class="mic-badge" id="micBadge">🎧 耳机</span></div>
   </header>
 
@@ -396,7 +393,7 @@
     <div class="card-title"><span class="dot"></span>西瓜品种 &amp; 重量</div>
 
     <label class="field-label" for="variety">西瓜品种</label>
-    <input id="variety" type="text" placeholder="请输入品种" autocomplete="off" maxlength="20" value="">
+    <input id="variety" type="text" placeholder="请输入品种名称" autocomplete="off" maxlength="20" value="">
     <div class="quick-tags">
       <button class="tag" data-v="8424">8424</button>
       <button class="tag" data-v="麒麟">麒麟</button>
@@ -406,7 +403,7 @@
 
     <label class="field-label field-label-spaced" for="weight">西瓜重量</label>
     <div class="weight-row">
-      <input id="weight" type="number" inputmode="decimal" min="0.3" max="20" step="0.1" placeholder="请输入重量" autocomplete="off">
+      <input id="weight" type="number" inputmode="decimal" min="0" max="10" step="0.1" placeholder="请输入重量" autocomplete="off">
       <span class="weight-unit">kg</span>
     </div>
   </section>
@@ -451,7 +448,7 @@
     <div class="warn-tip" id="warnTip"><span>⚠️</span><span id="warnText">数据波动大，建议补测一次</span></div>
     <div class="threshold-note">
       <b>参考阈值（通用）：</b>主频率 &lt; 133Hz 可能过熟/空心 · 133–189Hz 熟瓜 · &gt; 189Hz 偏生瓜。<br>
-      ⚠️ 不同品种存在差异，结果仅供参考。
+      ⚠️ <b>本工具仅作辅助参考，不可作为生熟判定的最终依据。</b>不同品种、产地、个体存在差异，购买前仍需结合外表、拍打、经验等综合判断。
     </div>
   </section>
 
@@ -480,8 +477,7 @@
     </div>
 
     <div class="community-intro">
-      🤝 大家上传的数据按天归档，每天 00:00（北京时间）从 001 号重新编号。<br>
-      <b>该项目为共创项目</b>：西瓜个体存在品种差异，判定会有不同，欢迎上传真实数据共同完善。
+      🤝 <b>该项目为共创项目</b>：西瓜个体存在品种差异，判定会有不同，欢迎上传真实数据共同完善。
     </div>
 
     <div class="comm-tabs">
@@ -496,11 +492,6 @@
       </div>
     </div>
   </section>
-
-  <footer>
-    音频在本地分析 · 仅当点击"上传共创"时才把 {品种, 频率, 判定} 发到云端 · 需 Chrome / Edge / Safari<br>
-    麦克风需在 <b>HTTPS</b> 或 <b>localhost</b> 环境授权；优先使用耳机麦克风。
-  </footer>
 
 </div>
 
@@ -642,6 +633,34 @@
     toastTimer=setTimeout(function(){toastEl.className="toast"+(isErr?" err":"");},2200);
   }
 
+  // ===== 品种名称库 =====
+  var VARIETY_SET=new Set([
+    "8424","早佳8424","麒麟","全美4K","美都","甘美","甘美4K",
+    "特小凤","黑美人","京欣","京欣一号","京欣二号","京欣王",
+    "早春红玉","红玉","小玉","甜王","新红宝","金城5号",
+    "郑杂5号","郑杂","西农8号","西农八号","京秀",
+    "小兰","黄小玉","红小玉","帅童","无籽西瓜","无子西瓜",
+    "黑皮","绿宝","双星","庆红宝","蜜童","墨童",
+    "硒砂瓜","小糖丸","冠龙","金钟冠龙","黑金刚","黑骏马",
+    "小凤","红蜜","金福","暑宝","丰乐","京蜜",
+    "蜜桂","红星","黑牡丹","台农","宝冠","莎蜜佳",
+    "火凤凰","安农二号","龙卷风","春光","蜜宝","华欣",
+    "绿裳","佳人","未知品种"
+  ]);
+  var VARIETY_ALIASES={
+    "8424西瓜":"8424","早佳":"8424",
+    "麒麟瓜":"麒麟","4K":"全美4K",
+    "美都西瓜":"美都",
+    "甘美西瓜":"甘美",
+    "小凤西瓜":"特小凤","小凤瓜":"特小凤",
+    "黑美人瓜":"黑美人",
+    "京欣瓜":"京欣",
+    "红玉西瓜":"早春红玉","2K":"红玉",
+    "甜王西瓜":"甜王",
+    "无籽瓜":"无籽西瓜","无子瓜":"无子西瓜",
+    "硒砂瓜":"硒砂瓜","石头瓜":"硒砂瓜"
+  };
+
   // ===== 品种快捷选择 =====
   var tags=document.querySelectorAll(".tag");
   for(var i=0;i<tags.length;i++){
@@ -651,13 +670,34 @@
     });
   }
   varietyEl.addEventListener("input",function(){setActiveTag(varietyEl.value);});
+  varietyEl.addEventListener("blur",function(){
+    var raw=varietyEl.value.trim();
+    if(!raw)return;
+    if(!isValidVariety(raw)){
+      toast("品种「"+raw+"」不在已知品种库中，已自动归入未知品种",true);
+      varietyEl.value="未知品种";
+      setActiveTag("未知品种");
+    }
+  });
+  function isValidVariety(v){
+    var n=v.trim().replace(/\s+/g,"");
+    if(VARIETY_SET.has(n))return true;
+    if(VARIETY_ALIASES[n])return true;
+    var lo=n.toLowerCase();
+    var keys=VARIETY_SET.keys();
+    for(var k=keys.next();!k.done;k=keys.next()){
+      var kv=k.value;
+      if(kv.indexOf(n)>=0||n.indexOf(kv)>=0||kv.toLowerCase().indexOf(lo)>=0||lo.indexOf(kv.toLowerCase())>=0)return true;
+    }
+    return false;
+  }
   function setActiveTag(v){
     state.variety=v;
     for(var i=0;i<tags.length;i++){
       tags[i].className=tags[i].getAttribute("data-v")===v?"tag active":"tag";
     }
   }
-  // 不再预设默认品种，去掉 setActiveTag("8424")
+  // 不再预设默认品种
 
   // ===== 重量录入 =====
   weightEl.addEventListener("input",syncWeight);
@@ -996,7 +1036,7 @@
     if(state.measurements.length===0){toast("没有可保存的测量数据",true);return;}
     state.variety=varietyEl.value.trim();
     var wRaw=parseFloat(weightEl.value);
-    var wSaved=(isFinite(wRaw)&&wRaw>=0.3&&wRaw<=20)?wRaw:null;
+    var wSaved=(isFinite(wRaw)&&wRaw>=0&&wRaw<=10)?wRaw:null;
     var avg=getAverage();var v=getVerdict(avg);
     var freqs=state.measurements.map(function(m){return m.frequency;});
     openModal({
@@ -1086,8 +1126,8 @@
     if(!state.variety){toast("请先填写品种",true);varietyEl.focus();return;}
     if(!apiEnabled()){toast("当前环境无法调用后端 API",true);return;}
     var wRaw=parseFloat(weightEl.value);
-    if(!isFinite(wRaw)||wRaw<0.3||wRaw>20){
-      toast("请先填写西瓜重量（0.3–20 kg）",true);weightEl.focus();return;
+    if(!isFinite(wRaw)||wRaw<0||wRaw>10){
+      toast("请先填写西瓜重量（0–10 kg）",true);weightEl.focus();return;
     }
     state.weight=wRaw;
     if(state.measurements.length<3){
@@ -1173,7 +1213,7 @@
   }
   function renderFeed(records){
     if(!records||records.length===0){
-      commFeedList.innerHTML='<div class="hist-empty">今天还没有人上传过，做第 001 号研究员吧！</div>';
+      commFeedList.innerHTML='<div class="hist-empty">今天还没有人上传过，来做第一个上传的吧！</div>';
       return;
     }
     var maxShow=5;
