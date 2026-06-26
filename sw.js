@@ -1,4 +1,4 @@
-var CACHE = "xigua-v1";
+var CACHE = "xigua-v2";
 var ASSETS = ["./","./index.html","./manifest.webmanifest","./icon.svg","./icon-192.png","./icon-512.png"];
 
 self.addEventListener("install", function(e){
@@ -15,6 +15,10 @@ self.addEventListener("activate", function(e){
 self.addEventListener("fetch", function(e){
   var req = e.request;
   if(req.method !== "GET") return;
+  var url;
+  try { url = new URL(req.url); } catch(_) { return; }
+  // 不缓存 API、跨域 API 请求一律直通网络
+  if(url.pathname.indexOf("/api/") === 0 || url.origin !== self.location.origin) return;
   e.respondWith(
     caches.match(req).then(function(cached){
       var net = fetch(req).then(function(res){

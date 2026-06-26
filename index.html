@@ -192,6 +192,89 @@
   }
   .btn-save:active:not(:disabled){transform:scale(.98)}
   .btn-save:disabled{opacity:.45;cursor:not-allowed;background:#bbb;box-shadow:none}
+  .btn-upload{
+    flex:1.4;border:none;border-radius:16px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;
+    color:#fff;font-family:inherit;background:linear-gradient(135deg,#FF8FA3,var(--red),var(--red-deep));box-shadow:0 10px 24px rgba(230,57,70,.30);transition:.15s;min-height:52px;
+  }
+  .btn-upload:active:not(:disabled){transform:scale(.98)}
+  .btn-upload:disabled{opacity:.45;cursor:not-allowed;background:#bbb;box-shadow:none}
+  .btn-upload.loading{pointer-events:none;opacity:.7}
+
+  /* 共创卡片 */
+  .card.community{border-color:#FFD0D6;background:linear-gradient(180deg,#FFFCFA,#FFF8F0)}
+  .community-intro{font-size:12.5px;color:var(--ink-soft);background:#FFF6EC;border-left:3px solid var(--red);border-radius:10px;padding:10px 13px;line-height:1.75;margin-bottom:14px}
+  .community-intro b{color:var(--red-deep)}
+
+  .comm-tabs{display:flex;align-items:center;gap:8px;margin-bottom:12px;border-bottom:1.5px solid var(--card-edge);padding-bottom:2px}
+  .comm-tab{
+    border:none;background:transparent;color:var(--muted);font-family:inherit;font-size:13.5px;font-weight:700;
+    padding:8px 10px;cursor:pointer;border-bottom:2.5px solid transparent;transition:.15s;margin-bottom:-1.5px;
+  }
+  .comm-tab.active{color:var(--red-deep);border-bottom-color:var(--red)}
+  .comm-tab:active{transform:scale(.96)}
+  .comm-refresh{
+    margin-left:auto;width:34px;height:34px;border-radius:10px;border:1.5px solid var(--card-edge);
+    background:#fff;color:var(--green-deep);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s;
+  }
+  .comm-refresh:active{transform:rotate(180deg)}
+  .comm-refresh.loading{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .comm-panel{animation:fadeIn .25s ease}
+  .comm-feed{display:flex;flex-direction:column;gap:9px;max-height:340px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
+  .feed-item{
+    display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:13px;background:#FFFCF7;
+    border:1.5px solid var(--card-edge);animation:slideIn .3s ease;
+  }
+  .feed-num{
+    flex-shrink:0;width:38px;height:38px;border-radius:50%;
+    background:linear-gradient(135deg,#FF8FA3,var(--red));
+    color:#fff;font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;letter-spacing:-.5px;
+  }
+  .feed-main{flex:1;min-width:0}
+  .feed-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .feed-user{font-size:12px;color:var(--muted);font-weight:500}
+  .feed-variety{font-weight:700;color:var(--ink);font-size:14.5px}
+  .feed-hz{font-family:"JetBrains Mono",monospace;font-weight:800;color:var(--green-deep);font-size:13.5px}
+  .feed-time{font-size:11px;color:var(--muted);margin-top:2px}
+
+  .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .stat-cell{border:1.5px solid var(--card-edge);border-radius:12px;padding:11px 13px;background:#FFFCF7;text-align:center}
+  .stat-label{font-size:11.5px;color:var(--muted);margin-bottom:4px}
+  .stat-value{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:800;color:var(--ink);line-height:1.1}
+  .stat-value small{font-size:11px;color:var(--muted);margin-left:2px;font-weight:600}
+
+  .stat-block{margin-top:12px}
+  .stat-block-title{font-size:13px;font-weight:700;color:var(--green-deep);margin-bottom:8px}
+  .stat-list{display:flex;flex-direction:column;gap:7px}
+  .stat-list-row{
+    display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
+    background:#FFFCF7;border:1.5px solid var(--card-edge);
+  }
+  .stat-list-name{flex:1;font-weight:700;color:var(--ink);font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .stat-list-meta{font-size:11.5px;color:var(--muted);font-family:"JetBrains Mono",monospace}
+  .stat-list-count{font-weight:800;color:var(--red);font-family:"JetBrains Mono",monospace;font-size:13.5px}
+
+  .verdict-bars{display:flex;flex-direction:column;gap:7px}
+  .vbar{display:flex;align-items:center;gap:10px}
+  .vbar-label{width:56px;font-size:12.5px;font-weight:700}
+  .vbar-label.raw{color:var(--green)}
+  .vbar-label.ripe{color:#B5651D}
+  .vbar-label.over{color:var(--red)}
+  .vbar-track{flex:1;height:14px;background:#F4FBF6;border-radius:7px;overflow:hidden;position:relative}
+  .vbar-fill{height:100%;transition:width .45s ease;border-radius:7px}
+  .vbar-fill.raw{background:linear-gradient(90deg,#52B788,var(--green))}
+  .vbar-fill.ripe{background:linear-gradient(90deg,#F4A261,var(--gold))}
+  .vbar-fill.over{background:linear-gradient(90deg,#FF8FA3,var(--red))}
+  .vbar-num{width:42px;text-align:right;font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:800;color:var(--ink)}
+
+  .freq-bars{display:flex;flex-direction:column;gap:6px}
+  .fbar{display:flex;align-items:center;gap:10px}
+  .fbar-label{width:64px;font-size:11.5px;color:var(--ink-soft);font-family:"JetBrains Mono",monospace}
+  .fbar-track{flex:1;height:11px;background:#FAFAF6;border-radius:5px;overflow:hidden}
+  .fbar-fill{height:100%;background:linear-gradient(90deg,#52B788,var(--green-deep));transition:width .45s ease}
+  .fbar-num{width:36px;text-align:right;font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:700;color:var(--ink)}
 
   /* 历史记录 */
   .hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -245,7 +328,7 @@
   <header>
     <div class="melon-badge">🍉</div>
     <h1>敲瓜辨生熟</h1>
-    <div class="subtitle">声学频率分析 · <b>本地处理 · 不上传</b><span class="mic-badge" id="micBadge">🎧 耳机</span></div>
+    <div class="subtitle">声学频率分析 · <b>本地分析</b> · <b style="color:var(--red)">共创项目</b><span class="mic-badge" id="micBadge">🎧 耳机</span></div>
   </header>
 
   <div class="env-warn" id="envWarn" hidden>
@@ -316,6 +399,7 @@
   <div class="actions">
     <button id="remedBtn" class="btn-ghost" disabled>＋ 补测一次</button>
     <button id="saveBtn" class="btn-save" disabled>💾 保存记录</button>
+    <button id="uploadBtn" class="btn-upload" disabled>☁️ 上传共创</button>
   </div>
 
   <!-- 历史记录 -->
@@ -328,8 +412,63 @@
     <button id="clearBtn" class="clear-all" style="display:none">🗑 清空全部记录</button>
   </section>
 
+  <!-- 共创数据 -->
+  <section class="card community">
+    <div class="hist-head">
+      <div class="card-title"><span class="dot"></span>共创数据 · <span style="color:var(--red);font-weight:900">今日</span></div>
+      <span class="hist-count" id="commTotal">— 条</span>
+    </div>
+
+    <div class="community-intro">
+      🤝 大家上传的数据按天归档，每天 00:00（北京时间）从 001 号重新编号。<br>
+      <b>该项目为共创项目</b>：西瓜个体存在品种差异，判定会有不同，欢迎上传真实数据共同完善。
+    </div>
+
+    <div class="comm-tabs">
+      <button class="comm-tab active" data-tab="feed">📜 上传记录</button>
+      <button class="comm-tab" data-tab="stats">📊 数据分析</button>
+      <button id="commRefresh" class="comm-refresh" title="刷新">↻</button>
+    </div>
+
+    <!-- 滚动记录 -->
+    <div id="commFeed" class="comm-panel">
+      <div class="comm-feed" id="commFeedList">
+        <div class="hist-empty" id="commFeedEmpty">点击右上角 ↻ 加载今日记录</div>
+      </div>
+    </div>
+
+    <!-- 分析面板 -->
+    <div id="commStats" class="comm-panel" hidden>
+      <div class="stat-row">
+        <div class="stat-cell">
+          <div class="stat-label">📈 平均频率</div>
+          <div class="stat-value" id="statAvg">—<small>Hz</small></div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">📉 频率范围</div>
+          <div class="stat-value" id="statRange">—</div>
+        </div>
+      </div>
+
+      <div class="stat-block">
+        <div class="stat-block-title">🍉 按品种统计</div>
+        <div id="statByVariety" class="stat-list"></div>
+      </div>
+
+      <div class="stat-block">
+        <div class="stat-block-title">🎯 判定结果分布</div>
+        <div class="verdict-bars" id="statByVerdict"></div>
+      </div>
+
+      <div class="stat-block">
+        <div class="stat-block-title">📐 频率分布</div>
+        <div class="freq-bars" id="statByFreq"></div>
+      </div>
+    </div>
+  </section>
+
   <footer>
-    纯前端单文件 · 音频本地分析不外传 · 需现代浏览器（Chrome / Edge / Safari）<br>
+    音频在本地分析 · 仅当点击"上传共创"时才把 {品种, 频率, 判定} 发到云端 · 需 Chrome / Edge / Safari<br>
     麦克风需在 <b>HTTPS</b> 或 <b>localhost</b> 环境授权；优先使用耳机麦克风。
   </footer>
 
@@ -362,17 +501,28 @@
   var FB_HIGH=500;        // fallback 上限
   var CONSISTENCY_LIMIT=10;
 
+  // ===== 后端 API 地址 =====
+  // 部署到 Vercel 后把下面的占位换成你的 Vercel 域名，如 "https://huaqiangmaigua.vercel.app"
+  // 在 Vercel 域名上跑时也可以留空字符串走同源 /api/*
+  var API_BASE="";
+
   // ===== DOM =====
   var $=function(id){return document.getElementById(id);};
   var varietyEl=$("variety"),startBtn=$("startBtn"),statusBox=$("statusBox"),
       statusMain=$("statusMain"),statusSub=$("statusSub"),pulse=$("pulse"),
       measList=$("measList"),avgVal=$("avgVal"),verdictCell=$("verdictCell"),
       verdictVal=$("verdictVal"),warnTip=$("warnTip"),warnText=$("warnText"),
-      remedBtn=$("remedBtn"),saveBtn=$("saveBtn"),histList=$("histList"),
-      histCount=$("histCount"),clearBtn=$("clearBtn"),toastEl=$("toast"),
+      remedBtn=$("remedBtn"),saveBtn=$("saveBtn"),uploadBtn=$("uploadBtn"),
+      histList=$("histList"),histCount=$("histCount"),clearBtn=$("clearBtn"),
+      toastEl=$("toast"),
       countVal=$("countVal"),countMinus=$("countMinus"),countPlus=$("countPlus"),
       micBadge=$("micBadge"),
-      envWarn=$("envWarn"),envWarnBody=$("envWarnBody");
+      envWarn=$("envWarn"),envWarnBody=$("envWarnBody"),
+      commTotal=$("commTotal"),commRefresh=$("commRefresh"),
+      commFeed=$("commFeed"),commStats=$("commStats"),
+      commFeedList=$("commFeedList"),commFeedEmpty=$("commFeedEmpty"),
+      statAvg=$("statAvg"),statRange=$("statRange"),
+      statByVariety=$("statByVariety"),statByVerdict=$("statByVerdict"),statByFreq=$("statByFreq");
 
   // ===== Toast =====
   var toastTimer=null;
@@ -544,7 +694,7 @@
     state.variety=varietyEl.value.trim();
     if(!state.variety){toast("请先填写或选择品种",true);varietyEl.focus();return;}
     state.isMeasuring=true;
-    startBtn.disabled=true;remedBtn.disabled=true;saveBtn.disabled=true;
+    startBtn.disabled=true;remedBtn.disabled=true;saveBtn.disabled=true;uploadBtn.disabled=true;
 
     var beginIndex=extra?state.measurements.length:0;
     if(!extra){state.measurements=[];renderMeasurements();}
@@ -557,6 +707,7 @@
       startBtn.disabled=false;
       remedBtn.disabled=state.measurements.length===0||state.measurements.length>=8;
       saveBtn.disabled=state.measurements.length===0;
+      uploadBtn.disabled=state.measurements.length===0;
       return;
     }
 
@@ -612,6 +763,7 @@
     startBtn.textContent="🔄 重新测量";
     remedBtn.disabled=state.measurements.length>=8;
     saveBtn.disabled=false;
+    uploadBtn.disabled=false;
 
     var avg=getAverage();
     statusBox.className="status-box";
@@ -740,6 +892,188 @@
     renderHistory();
   }
 
+  // ===== 上传共创 =====
+  function apiUrl(path){
+    var base=API_BASE||"";
+    if(base && base.charAt(base.length-1)==="/") base=base.slice(0,-1);
+    return base+path;
+  }
+  async function uploadCurrent(){
+    if(state.measurements.length===0){toast("没有可上传的测量数据",true);return;}
+    state.variety=varietyEl.value.trim();
+    if(!state.variety){toast("请先填写品种",true);return;}
+    if(!API_BASE){toast("尚未配置后端地址，请联系作者部署 Vercel",true);return;}
+    var avg=getAverage();
+    if(avg<30||avg>800){toast("频率超出可上传范围（30–800Hz）",true);return;}
+    if(state.measurements.length>=2 && !state.consistent){
+      if(!confirm("数据差异较大（最大差值 "+state.maxDiff+"Hz），仍要上传吗？")) return;
+    }
+    var v=getVerdict(avg);
+    uploadBtn.classList.add("loading");
+    uploadBtn.disabled=true;
+    var prev=uploadBtn.textContent;
+    uploadBtn.textContent="☁️ 上传中…";
+    try{
+      var r=await fetch(apiUrl("/api/upload"),{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({variety:state.variety,frequency:avg,verdict:v.badge})
+      });
+      var data=await r.json();
+      if(!r.ok||!data.ok)throw new Error(data&&data.error?data.error:("HTTP "+r.status));
+      var rec=data.record||{};
+      toast("🎉 已上传 · "+(rec.userLabel||"研究员")+" · "+avg+"Hz");
+      loadCommunity();
+    }catch(e){
+      toast("上传失败："+(e.message||"未知错误"),true);
+    }finally{
+      uploadBtn.classList.remove("loading");
+      uploadBtn.textContent=prev;
+      uploadBtn.disabled=state.measurements.length===0;
+    }
+  }
+
+  // ===== 共创数据：拉取 + 渲染 =====
+  var commTab="feed";
+  function fmtTime(ts){
+    var d=new Date(ts||Date.now());
+    return pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+  function badgeFor(verdict){
+    if(verdict==="ripe")return "ripe";
+    if(verdict==="over")return "over";
+    return "raw";
+  }
+  function verdictTextOf(verdict){
+    if(verdict==="ripe")return "熟瓜";
+    if(verdict==="over")return "过熟";
+    return "生瓜";
+  }
+  async function fetchJson(path){
+    if(!API_BASE){throw new Error("尚未配置后端地址");}
+    var r=await fetch(apiUrl(path));
+    var data=await r.json();
+    if(!r.ok||!data.ok)throw new Error(data&&data.error?data.error:("HTTP "+r.status));
+    return data;
+  }
+  async function loadCommunity(){
+    if(!API_BASE){
+      commFeedList.innerHTML='<div class="hist-empty">尚未配置后端 API，部署 Vercel 后即可看到共创数据</div>';
+      commTotal.textContent="— 条";
+      return;
+    }
+    commRefresh.classList.add("loading");
+    try{
+      var feedP=fetchJson("/api/records?limit=80");
+      var statP=fetchJson("/api/analysis");
+      var feed=await feedP, stat=await statP;
+      commTotal.textContent=(feed.total||0)+" 条";
+      renderFeed(feed.records||[]);
+      renderStats(stat);
+    }catch(e){
+      commFeedList.innerHTML='<div class="hist-empty">加载失败：'+escapeHtml(e.message||"未知错误")+'</div>';
+      commTotal.textContent="— 条";
+    }finally{
+      commRefresh.classList.remove("loading");
+    }
+  }
+  function renderFeed(records){
+    if(!records||records.length===0){
+      commFeedList.innerHTML='<div class="hist-empty">今天还没有人上传过，做第 001 号研究员吧！</div>';
+      return;
+    }
+    var html="";
+    for(var i=0;i<records.length;i++){
+      var r=records[i];
+      var num=(r.userLabel||"").replace(/号.*$/,"")||("00"+(r.userNumber||"?"));
+      var bc=badgeFor(r.verdict);
+      var vt=r.verdictText||verdictTextOf(r.verdict);
+      html+=
+        '<div class="feed-item">'+
+          '<div class="feed-num">'+escapeHtml(num)+'</div>'+
+          '<div class="feed-main">'+
+            '<div class="feed-top">'+
+              '<span class="feed-variety">'+escapeHtml(r.variety||"未填写")+'</span>'+
+              '<span class="feed-hz">'+Math.round(r.frequency||0)+' Hz</span>'+
+              '<span class="badge '+bc+'">'+escapeHtml(vt)+'</span>'+
+            '</div>'+
+            '<div class="feed-time">'+escapeHtml(r.userLabel||"")+' · '+fmtTime(r.timestamp)+'</div>'+
+          '</div>'+
+        '</div>';
+    }
+    commFeedList.innerHTML=html;
+  }
+  function renderStats(data){
+    var total=data.total||0;
+    var o=data.overall||{};
+    statAvg.innerHTML=total?Math.round(o.avgFreq)+'<small>Hz</small>':'—<small>Hz</small>';
+    statRange.innerHTML=total?(o.minFreq+'<small>–</small>'+o.maxFreq+'<small>Hz</small>'):'—';
+
+    // 品种
+    var bv=data.byVariety||[];
+    if(bv.length===0){
+      statByVariety.innerHTML='<div class="hist-empty" style="padding:10px">暂无数据</div>';
+    }else{
+      var top=bv.slice(0,8),html="";
+      for(var i=0;i<top.length;i++){
+        html+='<div class="stat-list-row">'+
+          '<span class="stat-list-name">🍉 '+escapeHtml(top[i].variety)+'</span>'+
+          '<span class="stat-list-meta">均 '+top[i].avgFreq+'Hz</span>'+
+          '<span class="stat-list-count">'+top[i].count+'</span>'+
+        '</div>';
+      }
+      statByVariety.innerHTML=html;
+    }
+
+    // 判定
+    var verd=data.byVerdict||{raw:0,ripe:0,over:0};
+    var sum=Math.max(1,(verd.raw||0)+(verd.ripe||0)+(verd.over||0));
+    var rows=[
+      {k:"raw",label:"生瓜",n:verd.raw||0},
+      {k:"ripe",label:"熟瓜",n:verd.ripe||0},
+      {k:"over",label:"过熟",n:verd.over||0}
+    ];
+    var vhtml="";
+    for(var j=0;j<rows.length;j++){
+      var pct=Math.round(rows[j].n*100/sum);
+      vhtml+='<div class="vbar">'+
+        '<span class="vbar-label '+rows[j].k+'">'+rows[j].label+'</span>'+
+        '<div class="vbar-track"><div class="vbar-fill '+rows[j].k+'" style="width:'+pct+'%"></div></div>'+
+        '<span class="vbar-num">'+rows[j].n+'</span>'+
+      '</div>';
+    }
+    statByVerdict.innerHTML=vhtml;
+
+    // 频率分布
+    var hist=data.freqHistogram||[];
+    var maxC=1;for(var m=0;m<hist.length;m++){if(hist[m].count>maxC)maxC=hist[m].count;}
+    var fhtml="";
+    for(var n2=0;n2<hist.length;n2++){
+      var w=Math.round(hist[n2].count*100/maxC);
+      fhtml+='<div class="fbar">'+
+        '<span class="fbar-label">'+escapeHtml(hist[n2].bin)+'</span>'+
+        '<div class="fbar-track"><div class="fbar-fill" style="width:'+w+'%"></div></div>'+
+        '<span class="fbar-num">'+hist[n2].count+'</span>'+
+      '</div>';
+    }
+    statByFreq.innerHTML=fhtml;
+  }
+
+  // Tab 切换
+  var commTabs=document.querySelectorAll(".comm-tab");
+  for(var ct=0;ct<commTabs.length;ct++){
+    commTabs[ct].addEventListener("click",function(){
+      var t=this.getAttribute("data-tab");
+      for(var i=0;i<commTabs.length;i++){
+        commTabs[i].className="comm-tab"+(commTabs[i]===this?" active":"");
+      }
+      commFeed.hidden=(t!=="feed");
+      commStats.hidden=(t!=="stats");
+      commTab=t;
+    });
+  }
+  commRefresh.addEventListener("click",loadCommunity);
+
   function renderHistory(){
     var arr=loadRecords();
     histCount.textContent=arr.length+" 条";
@@ -791,6 +1125,7 @@
   startBtn.addEventListener("click",function(){if(!state.isMeasuring)runMeasurement(false);});
   remedBtn.addEventListener("click",function(){if(!state.isMeasuring)runMeasurement(true);});
   saveBtn.addEventListener("click",saveCurrent);
+  uploadBtn.addEventListener("click",uploadCurrent);
 
   // 移动端：禁止双击缩放、手势缩放
   document.addEventListener("gesturestart",function(e){e.preventDefault();});
@@ -820,6 +1155,7 @@
   renderHistory();
   resetSummary();
   checkEnv();
+  loadCommunity();
 
   // 注册 Service Worker（PWA 离线支持）
   if("serviceWorker" in navigator){

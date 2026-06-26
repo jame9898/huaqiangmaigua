@@ -1,0 +1,9 @@
+{
+  "name": "huaqiangmaigua-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "敲瓜辨生熟 · 共创数据后端（Vercel Serverless + Upstash Redis）",
+  "engines": {
+    "node": ">=18"
+  }
+}
