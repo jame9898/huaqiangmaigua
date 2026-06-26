@@ -467,7 +467,7 @@
     <div class="warn-tip" id="warnTip"><span>⚠️</span><span id="warnText">数据波动大，建议补测一次</span></div>
     <div class="threshold-note">
       <b>参考阈值（通用）：</b>主频率 &lt; 133Hz 可能过熟/空心 · 133–189Hz 熟瓜 · &gt; 189Hz 偏生瓜。<br>
-      <b>公共上传校验：</b>多次测量两两差值需 ≤ 10Hz，且每次频谱需符合西瓜敲击声学特征；<b>本地保存</b>不受此限制。<br>
+      <b>公共上传校验：</b>多次测量两两差值需 ≤ 10Hz，且每次频谱需符合西瓜敲击声学特征（主频 60–400Hz、主峰突出度 ≥ 4.0）；<b>本地保存</b>不受此限制。<br>
       ⚠️ <b>本工具仅作辅助参考，不可作为生熟判定的最终依据。</b>不同品种、产地、个体存在差异，购买前仍需结合外表、拍打、经验等综合判断。
     </div>
   </section>
@@ -687,7 +687,7 @@
       if(state.measurements[i].acousticValid===false)invalidAcoustic.push(state.measurements[i].index);
     }
     if(invalidAcoustic.length>0){
-      reasons.push("第 "+invalidAcoustic.join("、")+" 次测量频谱不符合西瓜敲击声学特征（主峰不突出或频率异常）");
+      reasons.push("第 "+invalidAcoustic.join("、")+" 次测量频谱不符合西瓜敲击声学特征（需主频 60–400Hz 且主峰突出度 ≥ 4.0）");
     }
     return {ok:reasons.length===0,reasons:reasons};
   }
@@ -880,6 +880,7 @@
 
     var accum=new Float32Array(binCount);
     var frames=0,totalEnergy=0;
+    var frameEnergies=[]; // 每帧能量，用于敲击瞬态检测
 
     var startTs=ctx.currentTime;
     var endTs=startTs+REC_MS/1000;
@@ -889,6 +890,7 @@
         analyser.getByteFrequencyData(buf);
         var frameE=0;
         for(var b=0;b<binCount;b++){accum[b]+=buf[b];frameE+=buf[b];}
+        frameEnergies.push(frameE);
         totalEnergy+=frameE;frames++;
         if(ctx.currentTime<endTs){requestAnimationFrame(tick);}
         else{cleanup();analyzeResult();}
@@ -896,7 +898,26 @@
       function cleanup(){try{source.disconnect();hp.disconnect();lp.disconnect();}catch(e){}}
       function analyzeResult(){
         var avgEnergy=frames>0?totalEnergy/frames:0;
-        if(avgEnergy<6){reject(new Error("未检测到明显敲击声，请靠近西瓜并用力轻敲后重试"));return;}
+        // 敲击瞬态检测：纯相对判据，设备/音量无关
+        // 环境基线 = 排序后最低 30% 帧的平均（排除敲击帧后的真实底噪）
+        // 纯环境底噪：峰值≈基线，比值≈1；真实敲击：峰值远超基线，比值≥2.5
+        var maxFrameE=0;
+        for(var i=0;i<frameEnergies.length;i++){
+          if(frameEnergies[i]>maxFrameE){maxFrameE=frameEnergies[i];}
+        }
+        var sortedE=frameEnergies.slice().sort(function(a,b){return a-b;});
+        var baselineN=Math.max(1,Math.floor(sortedE.length*0.3));
+        var baselineSum=0;
+        for(var k=0;k<baselineN;k++){baselineSum+=sortedE[k];}
+        var baselineE=baselineSum/baselineN;
+        // 有瞬态 = 峰值/基线 ≥ 2.5；基线极小时只要峰值≥20（防数值噪声误判）
+        var hasTransient = baselineE>0
+          ? (maxFrameE/baselineE >= 2.5)
+          : (maxFrameE >= 20);
+        if(!hasTransient){
+          reject(new Error("未检测到敲击声（环境噪声为主），请在安静环境靠近西瓜用力轻敲"));
+          return;
+        }
         // 低频基频优先
         var lowBin=Math.max(1,Math.floor(BAND_LOW/binHz));
         var highBin=Math.min(binCount-1,Math.ceil(BAND_HIGH/binHz));
@@ -926,12 +947,20 @@
           spectrum[s]=Math.min(255,Math.round(accum[s]/Math.max(frames,1)));
         }
 
-        // 西瓜敲击声学特征校验：
-        // 1) 主频率落在合理共振范围 60–400Hz
-        // 2) 主峰突出度 peakVal/avgEnergy >= 5（有明显共振峰，而非平坦噪声/摩擦声）
-        // 3) 主峰能量绝对值达标（已由 absThresh=frames*8 隐式校验）
+        // 西瓜敲击声学特征校验（第二道防线）：
+        // 主频在 60–400Hz 共振范围 且 主峰突出度 peakRatio ≥ 4.0
+        // （敲木头实测约 2.8–3.7，西瓜中空共振主峰更尖锐，暂定 ≥4.0，后续按实测调整）
         var peakRatio=peakVal/Math.max(avgEnergy,1);
-        var acousticValid=(peakFreq>=60&&peakFreq<=400)&&(peakRatio>=5);
+        var freqInRange=(peakFreq>=60&&peakFreq<=400);
+        var peakSharp=(peakRatio>=4.0);
+        var acousticValid=freqInRange && peakSharp;
+        if(!acousticValid){
+          var reason="";
+          if(!freqInRange)reason="主频"+peakFreq+"Hz超出西瓜共振范围(60–400Hz)";
+          else reason="主峰突出度仅"+(Math.round(peakRatio*10)/10)+"（需≥4.0），频谱不够尖锐";
+          reject(new Error("频谱不符合西瓜敲击特征（"+reason+"），请对准西瓜腹部用指关节轻敲"));
+          return;
+        }
 
         resolve({
           frequency:peakFreq,
