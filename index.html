@@ -470,7 +470,7 @@
     <button id="startBtn" class="start-btn">开始测量</button>
     <div class="status-box" id="statusBox">
       <div class="status-main" id="statusMain"></div>
-      <div class="status-sub" id="statusSub">用指关节轻敲瓜身腹部，每次敲击后等待分析</div>
+      <div class="status-sub" id="statusSub">每次敲不同位置（脐部/腹部/花皮面等），取平均更准</div>
       <div class="pulse" id="pulse" aria-hidden="true">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
@@ -496,7 +496,7 @@
     <div class="warn-tip" id="warnTip"><span>⚠️</span><span id="warnText">数据波动大，建议补测一次</span></div>
     <div class="threshold-note">
       <b>参考阈值（通用）：</b>主频率 &lt; 133Hz 可能过熟/空心 · 133–189Hz 熟瓜 · &gt; 189Hz 偏生瓜。<br>
-      <b>公共上传校验：</b>仅需 ≥ 3 次测量且两两差值 ≤ 10Hz（声学特征校验已降级为参考提示，不再拦截上传）。<b>本地保存</b>不受任何限制。<br>
+      <b>公共上传校验：</b>仅需 ≥ 5 次测量且两两差值 ≤ 10Hz（声学特征校验已降级为参考提示，不再拦截上传）。<b>本地保存</b>不受任何限制。<br>
       ⚠️ <b>本工具仅作辅助参考，不可作为生熟判定的最终依据。</b>不同品种、产地、个体存在差异，购买前仍需结合外表、拍打、经验等综合判断。
     </div>
   </section>
@@ -600,7 +600,7 @@
   var state={
     variety:"",
     weight:null,
-    targetCount:3,
+    targetCount:5,
     measurements:[],
     isMeasuring:false,
     audioCtx:null,
@@ -702,12 +702,12 @@
       alertClose=$("alertClose"),alertCancel=$("alertCancel"),alertOk=$("alertOk");
 
   // 公共上传质量校验：返回 {ok, reasons[]}
-  // 规则：① 至少 3 次测量 ② 多次测量两两差值 ≤ 10Hz
+  // 规则：① 至少 5 次测量 ② 多次测量两两差值 ≤ 10Hz
   // 声学特征校验已降级为参考提示（BETA 阶段），不再作为上传拦截条件
   function validateForUpload(){
     var reasons=[];
-    if(state.measurements.length<3){
-      reasons.push("测量次数不足 3 次（当前 "+state.measurements.length+" 次），无法可靠判定");
+    if(state.measurements.length<5){
+      reasons.push("测量次数不足 5 次（当前 "+state.measurements.length+" 次），无法可靠判定");
     }
     if(state.measurements.length>=2 && !state.consistent){
       reasons.push("多次测量两两差值超过 10Hz（最大差值 "+state.maxDiff+"Hz），数据一致性不达标");
@@ -810,10 +810,10 @@
 
   // ===== 测量次数步进 =====
   function setCount(n){
-    n=Math.max(3,Math.min(8,n));
+    n=Math.max(5,Math.min(12,n));
     state.targetCount=n;
     countVal.value=n;
-    countMinus.disabled=(n<=3);
+    countMinus.disabled=(n<=5);
   }
   countMinus.addEventListener("click",function(){setCount(state.targetCount-1);});
   countPlus.addEventListener("click",function(){setCount(state.targetCount+1);});
@@ -901,7 +901,8 @@
     var sampleRate=ctx.sampleRate;
     var binHz=sampleRate/FFT_SIZE;
 
-    var accum=new Float32Array(binCount);
+    var accum=new Float32Array(binCount);      // 全帧累积（备用）
+    var frameSpectra=[];                        // 保存每帧频谱快照，用于筛选敲击帧
     var frames=0,totalEnergy=0;
     var frameEnergies=[]; // 每帧能量，用于敲击瞬态检测
 
@@ -913,6 +914,8 @@
         analyser.getByteFrequencyData(buf);
         var frameE=0;
         for(var b=0;b<binCount;b++){accum[b]+=buf[b];frameE+=buf[b];}
+        // 保存本帧频谱快照（用于后续筛选敲击帧）
+        frameSpectra.push(new Uint8Array(buf));
         frameEnergies.push(frameE);
         totalEnergy+=frameE;frames++;
         if(ctx.currentTime<endTs){requestAnimationFrame(tick);}
@@ -921,9 +924,6 @@
       function cleanup(){try{source.disconnect();hp.disconnect();lp.disconnect();}catch(e){}}
       function analyzeResult(){
         var avgEnergy=frames>0?totalEnergy/frames:0;
-        // 敲击瞬态检测（BETA 阶段降级为软提示，不硬拦截）
-        // 电脑麦克风灵敏度低 + 距离远，绝对阈值会误拦真实敲击
-        // hasTransient 仅影响 acousticValid 标记，不阻止测量通过
         var maxFrameE=0;
         for(var i=0;i<frameEnergies.length;i++){
           if(frameEnergies[i]>maxFrameE){maxFrameE=frameEnergies[i];}
@@ -936,16 +936,31 @@
         var hasTransient = baselineE>0
           ? (maxFrameE/baselineE >= 2.5)
           : (maxFrameE >= 50);
+        // 仅累积敲击帧的频谱（能量 ≥ 基线1.5倍 或 ≥ 峰值15%），排除环境底噪污染
+        // 这是解决"电脑测出环境底噪频率"的关键：底噪帧不进入主峰分析
+        var transientAccum=new Float32Array(binCount);
+        var transientFrames=0;
+        var transientThresh=Math.max(baselineE*1.5, maxFrameE*0.15);
+        for(var f=0;f<frameEnergies.length;f++){
+          if(frameEnergies[f]>=transientThresh){
+            var spec=frameSpectra[f];
+            for(var b=0;b<binCount;b++){transientAccum[b]+=spec[b];}
+            transientFrames++;
+          }
+        }
+        // 优先使用敲击帧频谱；若无敲击帧则回退到全帧累积
+        var useAccum = transientFrames>0 ? transientAccum : accum;
+        var useFrames = transientFrames>0 ? transientFrames : frames;
         // 低频基频优先
         var lowBin=Math.max(1,Math.floor(BAND_LOW/binHz));
         var highBin=Math.min(binCount-1,Math.ceil(BAND_HIGH/binHz));
         var peakBin=lowBin,peakVal=0;
-        for(var b=lowBin;b<=highBin;b++){if(accum[b]>peakVal){peakVal=accum[b];peakBin=b;}}
+        for(var b=lowBin;b<=highBin;b++){if(useAccum[b]>peakVal){peakVal=useAccum[b];peakBin=b;}}
         // fallback
         var fbLowBin=Math.max(1,Math.floor(FB_LOW/binHz));
         var fbHighBin=Math.min(binCount-1,Math.ceil(FB_HIGH/binHz));
         var fbPeakBin=fbLowBin,fbPeakVal=0;
-        for(var b=fbLowBin;b<=fbHighBin;b++){if(accum[b]>fbPeakVal){fbPeakVal=accum[b];fbPeakBin=b;}}
+        for(var b=fbLowBin;b<=fbHighBin;b++){if(useAccum[b]>fbPeakVal){fbPeakVal=useAccum[b];fbPeakBin=b;}}
         // 仅在完全无声时拦截
         if(peakVal===0 && fbPeakVal===0){
           reject(new Error("未检测到任何声音，请检查麦克风权限或靠近声源"));
@@ -956,22 +971,19 @@
           peakBin=fbPeakBin;peakVal=fbPeakVal;
         }
         // 谐波智能检测：若主峰落在 250-500Hz（超出西瓜基频区），检查其一半附近是否有基频候选
-        // 敲击声二次谐波能量常强于基频，误选谐波会导致频率翻倍误判
-        // 基频候选条件：在 主峰/2 ±15Hz 窗口内，能量 ≥ 主峰 25%
         var fundamentalFreq=Math.round((peakBin+0)*binHz);
         if(fundamentalFreq>250 && fundamentalFreq<=500){
           var halfFreq=fundamentalFreq/2;
           var halfLowBin=Math.max(1,Math.floor((halfFreq-15)/binHz));
           var halfHighBin=Math.min(binCount-1,Math.ceil((halfFreq+15)/binHz));
           var fundBin=halfLowBin,fundVal=0;
-          for(var b=halfLowBin;b<=halfHighBin;b++){if(accum[b]>fundVal){fundVal=accum[b];fundBin=b;}}
+          for(var b=halfLowBin;b<=halfHighBin;b++){if(useAccum[b]>fundVal){fundVal=useAccum[b];fundBin=b;}}
           if(fundVal>=peakVal*0.25){
-            // 找到合理的基频候选，优先采用
             peakBin=fundBin;peakVal=fundVal;
           }
         }
         // 抛物线插值
-        var prev=accum[peakBin-1]||0,next=accum[peakBin+1]||0,cur=accum[peakBin];
+        var prev=useAccum[peakBin-1]||0,next=useAccum[peakBin+1]||0,cur=useAccum[peakBin];
         var denom=(prev-2*cur+next);
         var shift=denom!==0?0.5*(prev-next)/denom:0;
         if(!isFinite(shift)||Math.abs(shift)>1)shift=0;
@@ -981,20 +993,18 @@
         var specEndBin=Math.min(binCount-1,Math.ceil(FB_HIGH/binHz))+1;
         var spectrum=new Uint8Array(specEndBin);
         for(var s=0;s<specEndBin;s++){
-          spectrum[s]=Math.min(255,Math.round(accum[s]/Math.max(frames,1)));
+          spectrum[s]=Math.min(255,Math.round(useAccum[s]/Math.max(useFrames,1)));
         }
 
         // 西瓜敲击声学特征校验（BETA 阶段降级为软提示，不硬拦截）
-        // 当前阈值基于手机麦克风 + 有限测试数据校准，电脑麦克风等设备完全不适用
-        // 记录 acousticValid / peakRatio 用于后续显示，但不阻止测量通过
         var totalAccum=0;
-        for(var ta=0;ta<binCount;ta++){totalAccum+=accum[ta];}
+        for(var ta=0;ta<binCount;ta++){totalAccum+=useAccum[ta];}
         var avgBinAccum=totalAccum/binCount;
         var peakRatio=peakVal/Math.max(avgBinAccum,1);
         var freqInRange=(peakFreq>=60&&peakFreq<=400);
         var peakSharp=(peakRatio>=10);
         var peakAboveBaseline = baselineE>0
-          ? ((peakVal/Math.max(frames,1))/baselineE >= 2.0)
+          ? ((peakVal/Math.max(useFrames,1))/baselineE >= 2.0)
           : true;
         var acousticValid=freqInRange && peakSharp && peakAboveBaseline && hasTransient;
 
@@ -1033,11 +1043,14 @@
       return;
     }
 
+    // 敲击位置提示：每次敲不同位置，取平均更准
+    var spotHints=["脐部（瓜蒂对面）","腹部中间（侧面最宽处）","花皮面（花纹明显处）","靠近瓜蒂一侧","脐部偏上 3cm","腹部偏下 3cm","侧面任意位置","顶部弧面"];
     for(var k=0;k<n;k++){
       var idx=beginIndex+k+1;
+      var spotIdx=(idx-1)%spotHints.length;
       statusBox.className="status-box";
       statusMain.textContent="准备第 "+idx+" 次敲击…";
-      statusSub.innerHTML='请在听到"嘀"后<b>立即用指关节轻敲瓜身腹部</b>';
+      statusSub.innerHTML='建议敲击：<b style="color:var(--green-deep)">'+spotHints[spotIdx]+'</b> · 用指关节轻敲';
       await delay(700);
 
       statusBox.className="status-box recording";
@@ -1086,7 +1099,7 @@
   function finalize(){
     if(state.measurements.length===0){
       statusMain.textContent="未获得有效测量，请重试";
-      statusSub.textContent="用指关节轻敲瓜身腹部，每次敲击后等待分析";
+      statusSub.textContent="每次敲不同位置，取平均更准";
       startBtn.disabled=false;
       return;
     }
