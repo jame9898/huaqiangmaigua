@@ -31,8 +31,8 @@ export async function onRequestPost({ request, env }) {
 
   // 重量必填
   const w = Number(body.weight);
-  if (!Number.isFinite(w) || w < 0.3 || w > 20) {
-    return jsonError(400, "西瓜重量不能为空且需在 0.3–20 kg 范围内");
+  if (!Number.isFinite(w) || w < 0 || w > 10) {
+    return jsonError(400, "西瓜重量不能为空且需在 0–10 kg 范围内");
   }
   const weight = Math.round(w * 10) / 10;
 

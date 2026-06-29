@@ -132,6 +132,21 @@
   #weight[type=number]{-moz-appearance:textfield}
   .weight-unit{padding-right:16px;color:var(--muted);font-size:14px;font-weight:600}
 
+  /* 固定预警信息条 */
+  #tips-bar{
+    background:#fff3cd;
+    padding:12px 16px;
+    font-size:12.5px;
+    color:#856404;
+    border-radius:10px;
+    margin:10px 0;
+    line-height:1.7;
+    border-left:3px solid #f0ad4e;
+  }
+  #tips-bar .tips-title{font-weight:700;font-size:13px;margin-bottom:4px;color:#6e4a04}
+  #tips-bar .tips-body{color:#856404}
+  #tips-bar .tips-meta{margin-top:5px;font-size:11px;color:#a07a14;font-family:"JetBrains Mono",monospace}
+
   /* 测量控制 */
   .count-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
   .count-row .field-label{margin-bottom:0}
@@ -439,6 +454,14 @@
     <div class="env-warn-body" id="envWarnBody"></div>
   </div>
 
+  <!-- 固定预警信息条 -->
+  <div id="tips-bar">
+    <div class="tips-title">🍉 品质预警 · 葫芦素风险</div>
+    <div class="tips-body">6月29日-7月1日，云贵至江南中北部（云南、贵州、湖南、江西中北部、苏皖南部、上海、浙江中北部）有大到暴雨。西瓜成熟期遇雨，葫芦素风险升高，口感可能发苦。</div>
+    <div class="tips-body" style="margin-top:5px"><b>建议：</b>结合西瓜运输周期 1-2 天，<b>7月1日-5日期间谨慎购买</b>上述地区及周边露天种植的西瓜。</div>
+    <div class="tips-meta">来源：中央气象台 6.29 18:00 · 手动发布</div>
+  </div>
+
   <!-- 品种 & 重量录入 -->
   <section class="card">
     <div class="card-title"><span class="dot"></span>西瓜品种 &amp; 重量</div>
@@ -466,7 +489,7 @@
       <span class="field-label">测量次数</span>
       <div class="stepper">
         <button id="countMinus" aria-label="减少">−</button>
-        <input id="countVal" value="3" readonly>
+        <input id="countVal" value="5" readonly>
         <button id="countPlus" aria-label="增加">+</button>
       </div>
     </div>
@@ -503,8 +526,13 @@
       ⚠️ <b>本工具仅作辅助参考，不可作为生熟判定的最终依据。</b>不同品种、产地、个体存在差异，购买前仍需结合外表、拍打、经验等综合判断。
     </div>
     <div class="quality-note">
+<<<<<<< Updated upstream
       <b>🍉 频率仅反映成熟度，不代表西瓜品质。</b>购买前请同时观察：<b>外表</b>（病斑/机械伤）、<b>瓜蒂</b>（新鲜度/弯曲度）、<b>瓜尾</b>（是否有异常泛白）、<b>天气</b>（降雨/气温/露天或大棚种植/销售半径）。<br>
       <span class="risk">⚠️ 露天种植且遭遇降雨的西瓜可能产生葫芦素，影响口感，声学检测无法识别。</span>
+=======
+      <b>🍉 频率仅反映成熟度，不代表西瓜品质。</b>购买前请同时观察：<b>外表</b>（病斑/机械伤）、<b>瓜蒂</b>（新鲜度/弯曲度）、<b>瓜尾</b>（是否有异常泛白）。<br>
+      天气风险（降雨/气温/种植方式）见页面上方的葫芦素风险与天气提示长条。
+>>>>>>> Stashed changes
     </div>
   </section>
 
@@ -544,7 +572,7 @@
     <!-- 滚动记录 -->
     <div id="commFeed" class="comm-panel">
       <div class="comm-feed" id="commFeedList">
-        <div class="hist-empty" id="commFeedEmpty">点击右上角 ↻ 加载今日记录</div>
+        <div class="hist-empty" id="commFeedEmpty">点击右上角 ↗ 加载今日记录</div>
       </div>
     </div>
   </section>
@@ -1657,7 +1685,7 @@
   }
 
   // 初始化
-  setCount(3);
+  setCount(5);
   renderHistory();
   resetSummary();
   checkEnv();

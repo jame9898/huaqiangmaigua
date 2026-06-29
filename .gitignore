@@ -3,3 +3,13 @@ key.pem
 serve_https.py
 .trae/
 __pycache__/
+
+# 气象数据归档（本地独占，不上传 GitHub）
+weather-archive/
+weather-archive/raw/
+weather-archive/warnings/
+weather-archive/*.html
+weather-archive/*.txt
+weather-archive/*.json
+weather-archive/*.log
+weather_archive.py

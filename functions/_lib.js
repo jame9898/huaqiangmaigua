@@ -75,7 +75,7 @@ export function getKV(env) {
   throw new Error("KV 未绑定：请在 Cloudflare Pages → Settings → Bindings 添加变量名 KV（注意别带空格）");
 }
 
-// 注意：Cloudflare KV 没有原子 INCR / LPUSH，下面是“读—改—写”，小流量敲瓜场景足够
+// 注意：Cloudflare KV 没有原子 INCR / LPUSH，下面是“读—改—写”，小流量拍打场景足够
 // 同一秒内多人上传可能出现编号竞争，重号概率极低；如果未来要严格序号，可换 D1 / Durable Objects
 export async function nextUserNumber(kv, date) {
   const key = `counter:${date}`;
