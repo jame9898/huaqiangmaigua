@@ -1,7 +1,7 @@
 {
   "name": "敲瓜辨生熟",
   "short_name": "敲瓜",
-  "description": "敲击西瓜采集声学频率，判断生熟。本地处理，不上传。",
+  "description": "拍打西瓜采集声学频率，判断生熟。本地处理，不上传。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

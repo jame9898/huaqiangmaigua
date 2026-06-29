@@ -722,7 +722,7 @@
       html+='<li>'+escapeHtml(reasons[i])+'</li>';
     }
     html+='</ul>';
-    html+='<div class="alert-tip-box">💡 <b>本地保存</b>不受此限制，可继续保存到本机；若希望上传至公共数据库，请点击「重新测量」按规范重新敲击西瓜腹部。</div>';
+    html+='<div class="alert-tip-box">💡 <b>本地保存</b>不受此限制，可继续保存到本机；若希望上传至公共数据库，请点击「重新测量」按规范重新拍打西瓜腹部。</div>';
     alertBody.innerHTML=html;
     alertOverlay.hidden=false;
   }
@@ -1053,20 +1053,20 @@
       return;
     }
 
-    // 敲击位置提示：每次敲不同位置，取平均更准
+    // 拍打位置提示：每次拍不同位置，取平均更准
     var spotHints=["脐部（瓜蒂对面）","腹部中间（侧面最宽处）","花皮面（花纹明显处）","靠近瓜蒂一侧","脐部偏上 3cm","腹部偏下 3cm","侧面任意位置","顶部弧面"];
     for(var k=0;k<n;k++){
       var idx=beginIndex+k+1;
       var spotIdx=(idx-1)%spotHints.length;
       statusBox.className="status-box";
-      statusMain.textContent="准备第 "+idx+" 次敲击…";
-      statusSub.innerHTML='建议敲击：<b style="color:var(--green-deep)">'+spotHints[spotIdx]+'</b> · 用指关节轻敲';
+      statusMain.textContent="准备第 "+idx+" 次拍打…";
+      statusSub.innerHTML='建议拍打：<b style="color:var(--green-deep)">'+spotHints[spotIdx]+'</b> · 用掌心拍打';
       await delay(700);
 
       statusBox.className="status-box recording";
       pulse.style.display="flex";
       statusMain.innerHTML='🎤 录音中 · 第 <span class="countdown" id="cd">'+(REC_MS/1000)+'</span> s';
-      statusSub.textContent="请保持安静，敲击后等待分析…";
+      statusSub.textContent="请保持安静，拍打后等待分析…";
       startCountdown();
 
       try{
