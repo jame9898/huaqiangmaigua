@@ -956,6 +956,14 @@
         var highBin=Math.min(binCount-1,Math.ceil(BAND_HIGH/binHz));
         var peakBin=lowBin,peakVal=0;
         for(var b=lowBin;b<=highBin;b++){if(useAccum[b]>peakVal){peakVal=useAccum[b];peakBin=b;}}
+        // 共振区能量质心（加权平均频率）：比单峰更稳定
+        // 解决同一颗瓜测出 160/190/199 波动问题：多模式共振时取质心
+        var centroidSum=0,centroidWeight=0;
+        for(var b=lowBin;b<=highBin;b++){
+          var w=useAccum[b];
+          if(w>0){centroidSum+=b*binHz*w;centroidWeight+=w;}
+        }
+        var centroidFreq=centroidWeight>0?Math.round(centroidSum/centroidWeight):0;
         // fallback
         var fbLowBin=Math.max(1,Math.floor(FB_LOW/binHz));
         var fbHighBin=Math.min(binCount-1,Math.ceil(FB_HIGH/binHz));
@@ -970,7 +978,7 @@
         if(peakVal===0 && fbPeakVal>0){
           peakBin=fbPeakBin;peakVal=fbPeakVal;
         }
-        // 谐波智能检测：若主峰落在 250-500Hz（超出西瓜基频区），检查其一半附近是否有基频候选
+        // 谐波智能检测：若主峰落在 250-500Hz，检查半频窗口
         var fundamentalFreq=Math.round((peakBin+0)*binHz);
         if(fundamentalFreq>250 && fundamentalFreq<=500){
           var halfFreq=fundamentalFreq/2;
@@ -982,12 +990,14 @@
             peakBin=fundBin;peakVal=fundVal;
           }
         }
-        // 抛物线插值
+        // 抛物线插值（精修单峰位置）
         var prev=useAccum[peakBin-1]||0,next=useAccum[peakBin+1]||0,cur=useAccum[peakBin];
         var denom=(prev-2*cur+next);
         var shift=denom!==0?0.5*(prev-next)/denom:0;
         if(!isFinite(shift)||Math.abs(shift)>1)shift=0;
         var peakFreq=Math.round((peakBin+shift)*binHz);
+        // 最终频率：优先用共振区质心（更稳定），质心无效时回退单峰
+        var finalFreq=(centroidFreq>=60&&centroidFreq<=250)?centroidFreq:peakFreq;
 
         // 频谱切片（0 ~ FB_HIGH Hz），用于绘图
         var specEndBin=Math.min(binCount-1,Math.ceil(FB_HIGH/binHz))+1;
@@ -1001,7 +1011,7 @@
         for(var ta=0;ta<binCount;ta++){totalAccum+=useAccum[ta];}
         var avgBinAccum=totalAccum/binCount;
         var peakRatio=peakVal/Math.max(avgBinAccum,1);
-        var freqInRange=(peakFreq>=60&&peakFreq<=400);
+        var freqInRange=(finalFreq>=60&&finalFreq<=400);
         var peakSharp=(peakRatio>=10);
         var peakAboveBaseline = baselineE>0
           ? ((peakVal/Math.max(useFrames,1))/baselineE >= 2.0)
@@ -1009,7 +1019,7 @@
         var acousticValid=freqInRange && peakSharp && peakAboveBaseline && hasTransient;
 
         resolve({
-          frequency:peakFreq,
+          frequency:finalFreq,
           spectrum:spectrum,
           acousticValid:acousticValid,
           peakRatio:Math.round(peakRatio*10)/10,
