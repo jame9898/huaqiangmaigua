@@ -192,6 +192,7 @@
   .meas-hz small{font-size:11px;color:var(--muted);font-weight:500;margin-left:2px}
   .meas-hz .ac-tag{font-size:10.5px;color:var(--muted);font-weight:500;margin-left:6px;font-family:inherit}
   .meas-hz .ac-tag.bad{color:var(--red-deep)}
+  .meas-hz .ac-tag.ref{color:var(--muted)}
   .meas-state{font-size:18px;align-self:flex-start;margin-top:2px}
   .meas-empty{color:var(--muted);font-size:13px;text-align:center;padding:14px}
   .meas-spectrum-wrap{width:100%;margin-top:2px}
@@ -495,7 +496,7 @@
     <div class="warn-tip" id="warnTip"><span>⚠️</span><span id="warnText">数据波动大，建议补测一次</span></div>
     <div class="threshold-note">
       <b>参考阈值（通用）：</b>主频率 &lt; 133Hz 可能过熟/空心 · 133–189Hz 熟瓜 · &gt; 189Hz 偏生瓜。<br>
-      <b>公共上传校验：</b>多次测量两两差值需 ≤ 10Hz，且每次频谱需符合西瓜敲击声学特征（主频 60–400Hz、主峰突出度 ≥ 4.0）；<b>本地保存</b>不受此限制。<br>
+      <b>公共上传校验：</b>仅需 ≥ 3 次测量且两两差值 ≤ 10Hz（声学特征校验已降级为参考提示，不再拦截上传）。<b>本地保存</b>不受任何限制。<br>
       ⚠️ <b>本工具仅作辅助参考，不可作为生熟判定的最终依据。</b>不同品种、产地、个体存在差异，购买前仍需结合外表、拍打、经验等综合判断。
     </div>
   </section>
@@ -701,7 +702,8 @@
       alertClose=$("alertClose"),alertCancel=$("alertCancel"),alertOk=$("alertOk");
 
   // 公共上传质量校验：返回 {ok, reasons[]}
-  // 规则：① 至少 3 次测量 ② 多次测量两两差值 ≤ 10Hz ③ 每次测量频谱符合西瓜敲击声学特征
+  // 规则：① 至少 3 次测量 ② 多次测量两两差值 ≤ 10Hz
+  // 声学特征校验已降级为参考提示（BETA 阶段），不再作为上传拦截条件
   function validateForUpload(){
     var reasons=[];
     if(state.measurements.length<3){
@@ -709,13 +711,6 @@
     }
     if(state.measurements.length>=2 && !state.consistent){
       reasons.push("多次测量两两差值超过 10Hz（最大差值 "+state.maxDiff+"Hz），数据一致性不达标");
-    }
-    var invalidAcoustic=[];
-    for(var i=0;i<state.measurements.length;i++){
-      if(state.measurements[i].acousticValid===false)invalidAcoustic.push(state.measurements[i].index);
-    }
-    if(invalidAcoustic.length>0){
-      reasons.push("第 "+invalidAcoustic.join("、")+" 次测量频谱不符合西瓜敲击声学特征（需主频 60–400Hz 且主峰突出度 ≥ 4.0）");
     }
     return {ok:reasons.length===0,reasons:reasons};
   }
@@ -926,10 +921,9 @@
       function cleanup(){try{source.disconnect();hp.disconnect();lp.disconnect();}catch(e){}}
       function analyzeResult(){
         var avgEnergy=frames>0?totalEnergy/frames:0;
-        // 敲击瞬态检测：纯相对判据，设备/音量无关
-        // 环境基线 = 排序后最低 30% 帧的平均（排除敲击帧后的真实底噪）
-        // 纯环境底噪：峰值≈基线，比值≈1；真实敲击：峰值远超基线，比值≥2.5
-        // 注意：必须有真实的相对比值，禁止用绝对阈值后门放行（否则环境底噪会误通过）
+        // 敲击瞬态检测（BETA 阶段降级为软提示，不硬拦截）
+        // 电脑麦克风灵敏度低 + 距离远，绝对阈值会误拦真实敲击
+        // hasTransient 仅影响 acousticValid 标记，不阻止测量通过
         var maxFrameE=0;
         for(var i=0;i<frameEnergies.length;i++){
           if(frameEnergies[i]>maxFrameE){maxFrameE=frameEnergies[i];}
@@ -939,15 +933,9 @@
         var baselineSum=0;
         for(var k=0;k<baselineN;k++){baselineSum+=sortedE[k];}
         var baselineE=baselineSum/baselineN;
-        // 强制相对比值判据：峰值必须显著高于环境基线（≥2.5 倍）
-        // 基线为 0 时（极安静），要求峰值至少 200（真实敲击声能量量级）
         var hasTransient = baselineE>0
           ? (maxFrameE/baselineE >= 2.5)
-          : (maxFrameE >= 200);
-        if(!hasTransient){
-          reject(new Error("未检测到敲击声（环境噪声为主），请在安静环境靠近西瓜用力轻敲"));
-          return;
-        }
+          : (maxFrameE >= 50);
         // 低频基频优先
         var lowBin=Math.max(1,Math.floor(BAND_LOW/binHz));
         var highBin=Math.min(binCount-1,Math.ceil(BAND_HIGH/binHz));
@@ -958,10 +946,29 @@
         var fbHighBin=Math.min(binCount-1,Math.ceil(FB_HIGH/binHz));
         var fbPeakBin=fbLowBin,fbPeakVal=0;
         for(var b=fbLowBin;b<=fbHighBin;b++){if(accum[b]>fbPeakVal){fbPeakVal=accum[b];fbPeakBin=b;}}
-        var absThresh=frames*8;
-        if(peakVal<absThresh||peakVal<fbPeakVal*0.2){
-          if(fbPeakVal>=absThresh){peakBin=fbPeakBin;peakVal=fbPeakVal;}
-          else{reject(new Error("未检测到明显敲击声，请靠近西瓜并用力轻敲后重试"));return;}
+        // 仅在完全无声时拦截
+        if(peakVal===0 && fbPeakVal===0){
+          reject(new Error("未检测到任何声音，请检查麦克风权限或靠近声源"));
+          return;
+        }
+        // 优先用西瓜共振区(60-250Hz)主峰；仅当该区完全无峰时才回退到 fallback
+        if(peakVal===0 && fbPeakVal>0){
+          peakBin=fbPeakBin;peakVal=fbPeakVal;
+        }
+        // 谐波智能检测：若主峰落在 250-500Hz（超出西瓜基频区），检查其一半附近是否有基频候选
+        // 敲击声二次谐波能量常强于基频，误选谐波会导致频率翻倍误判
+        // 基频候选条件：在 主峰/2 ±15Hz 窗口内，能量 ≥ 主峰 25%
+        var fundamentalFreq=Math.round((peakBin+0)*binHz);
+        if(fundamentalFreq>250 && fundamentalFreq<=500){
+          var halfFreq=fundamentalFreq/2;
+          var halfLowBin=Math.max(1,Math.floor((halfFreq-15)/binHz));
+          var halfHighBin=Math.min(binCount-1,Math.ceil((halfFreq+15)/binHz));
+          var fundBin=halfLowBin,fundVal=0;
+          for(var b=halfLowBin;b<=halfHighBin;b++){if(accum[b]>fundVal){fundVal=accum[b];fundBin=b;}}
+          if(fundVal>=peakVal*0.25){
+            // 找到合理的基频候选，优先采用
+            peakBin=fundBin;peakVal=fundVal;
+          }
         }
         // 抛物线插值
         var prev=accum[peakBin-1]||0,next=accum[peakBin+1]||0,cur=accum[peakBin];
@@ -977,26 +984,19 @@
           spectrum[s]=Math.min(255,Math.round(accum[s]/Math.max(frames,1)));
         }
 
-        // 西瓜敲击声学特征校验（第二道防线）：
-        // 1) 主频在 60–400Hz 共振范围
-        // 2) 主峰突出度 peakRatio ≥ 4.0（敲木头实测 2.8–3.7，西瓜中空共振主峰更尖锐）
-        // 3) 主峰能量必须显著高于环境基线（防止环境底噪共振骗过瞬态检测后直接输出）
-        //    环境底噪共振：主峰累积值/帧数 ≈ baselineE；真实敲击：主峰远超基线
-        var peakRatio=peakVal/Math.max(avgEnergy,1);
+        // 西瓜敲击声学特征校验（BETA 阶段降级为软提示，不硬拦截）
+        // 当前阈值基于手机麦克风 + 有限测试数据校准，电脑麦克风等设备完全不适用
+        // 记录 acousticValid / peakRatio 用于后续显示，但不阻止测量通过
+        var totalAccum=0;
+        for(var ta=0;ta<binCount;ta++){totalAccum+=accum[ta];}
+        var avgBinAccum=totalAccum/binCount;
+        var peakRatio=peakVal/Math.max(avgBinAccum,1);
         var freqInRange=(peakFreq>=60&&peakFreq<=400);
-        var peakSharp=(peakRatio>=4.0);
+        var peakSharp=(peakRatio>=10);
         var peakAboveBaseline = baselineE>0
           ? ((peakVal/Math.max(frames,1))/baselineE >= 2.0)
-          : true; // baselineE 为 0 时不拦，交给前面瞬态检测
-        var acousticValid=freqInRange && peakSharp && peakAboveBaseline;
-        if(!acousticValid){
-          var reason="";
-          if(!freqInRange)reason="主频"+peakFreq+"Hz超出西瓜共振范围(60–400Hz)";
-          else if(!peakSharp)reason="主峰突出度仅"+(Math.round(peakRatio*10)/10)+"（需≥4.0），频谱不够尖锐";
-          else reason="主峰能量未显著高于环境基线，疑似环境底噪共振";
-          reject(new Error("频谱不符合西瓜敲击特征（"+reason+"），请对准西瓜腹部用指关节轻敲"));
-          return;
-        }
+          : true;
+        var acousticValid=freqInRange && peakSharp && peakAboveBaseline && hasTransient;
 
         resolve({
           frequency:peakFreq,
@@ -1061,9 +1061,10 @@
         });
         renderMeasurements();
         statusBox.className="status-box";
-        var freqColor=result.acousticValid?'var(--green)':'var(--gold)';
-        statusMain.innerHTML='第 '+idx+' 次完成 · <span style="color:'+freqColor+'">'+freq+' Hz</span>'+
-          (result.acousticValid?'':' · <span style="color:var(--gold);font-size:13px">频谱异常</span>');
+        var acNote=result.acousticValid
+          ? ' · <span style="color:var(--green);font-size:13px">✓ 声学特征合格</span>'
+          : ' · <span style="color:var(--gold);font-size:13px">⚠ 声学特征仅供参考（峰值比 '+result.peakRatio+'）</span>';
+        statusMain.innerHTML='第 '+idx+' 次完成 · <span style="color:var(--green)">'+freq+' Hz</span>'+acNote;
         statusSub.textContent=k<n-1?"稍候进行下一次…":"分析中…";
         await delay(450);
       }catch(err){
@@ -1101,17 +1102,11 @@
     var avg=getAverage();
     statusBox.className="status-box";
     statusMain.innerHTML='✅ 共 '+state.measurements.length+' 次测量完成';
-    var badAcoustic=0;
-    for(var ba=0;ba<state.measurements.length;ba++){if(state.measurements[ba].acousticValid===false)badAcoustic++;}
     var tip;
-    if(state.consistent && badAcoustic===0){
-      tip='一致性与频谱均合格 · 平均 <b style="color:var(--green-deep)">'+avg+' Hz</b> · 可保存或上传共创';
-    }else if(!state.consistent && badAcoustic>0){
-      tip='差异明显（最大差值 '+state.maxDiff+'Hz）且 '+badAcoustic+' 次频谱异常 · 平均 <b style="color:var(--gold)">'+avg+' Hz</b> · 不可上传公共库，建议重新测量';
-    }else if(!state.consistent){
-      tip='差异明显（最大差值 '+state.maxDiff+'Hz）· 平均 <b style="color:var(--gold)">'+avg+' Hz</b> · 不可上传公共库，建议重新测量';
+    if(state.consistent){
+      tip='一致性良好 · 平均 <b style="color:var(--green-deep)">'+avg+' Hz</b> · 可保存或上传共创';
     }else{
-      tip='有 '+badAcoustic+' 次频谱异常 · 平均 <b style="color:var(--gold)">'+avg+' Hz</b> · 不可上传公共库，建议重新测量';
+      tip='差异明显（最大差值 '+state.maxDiff+'Hz）· 平均 <b style="color:var(--gold)">'+avg+' Hz</b> · 不可上传公共库，建议重新测量';
     }
     statusSub.innerHTML=tip;
   }
@@ -1156,7 +1151,7 @@
       var m=state.measurements[i];
       var row=document.createElement("div");
       row.className="meas-row"+(m.isOutlier?" outlier":"");
-      var acTag=m.acousticValid===false?'<span class="ac-tag bad">· 频谱异常</span>':'';
+      var acTag=m.acousticValid===false?'<span class="ac-tag ref">· 参考值</span>':'';
       row.innerHTML=
         '<div class="meas-left">'+
           '<div class="meas-left-top">'+
@@ -1168,7 +1163,7 @@
             '<div class="meas-spectrum-label"><span>0Hz</span><span>'+FB_HIGH+'Hz</span></div>'+
           '</div>'+
         '</div>'+
-        '<span class="meas-state">'+(m.acousticValid===false?'⚠️':(m.isOutlier?'⚠️':'✅'))+'</span>';
+        '<span class="meas-state">'+(m.isOutlier?'⚠️':'✅')+'</span>';
       measList.appendChild(row);
       // 布局后再绘制频谱图，确保 canvas.clientWidth 准确
       requestAnimationFrame(function(r,measurement){
@@ -1239,21 +1234,15 @@
     verdictCell.className="summary-cell "+v.cls;
     verdictVal.textContent=v.text;
     var icon=warnTip.firstElementChild;
-    var badAcoustic=0;
-    for(var i=0;i<state.measurements.length;i++){if(state.measurements[i].acousticValid===false)badAcoustic++;}
     if(state.measurements.length>=2){
       if(!state.consistent){
         warnTip.className="warn-tip show";
         if(icon)icon.textContent="⚠️";
         warnText.textContent="数据差异明显（最大差值 "+state.maxDiff+"Hz > "+CONSISTENCY_LIMIT+"），不可上传公共库，建议重新测量";
-      }else if(badAcoustic>0){
-        warnTip.className="warn-tip show";
-        if(icon)icon.textContent="⚠️";
-        warnText.textContent="有 "+badAcoustic+" 次测量频谱不符合西瓜敲击特征，不可上传公共库，建议重新测量";
       }else{
         warnTip.className="warn-tip ok show";
         if(icon)icon.textContent="✅";
-        warnText.textContent="一致性与频谱特征均合格，可保存或上传共创";
+        warnText.textContent="数据一致性合格，可保存或上传共创";
       }
     }else{
       warnTip.className="warn-tip";
